@@ -217,7 +217,13 @@ class Summation(TensorOp):
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        return broadcast_to(reshape(out_grad, node.inputs[0].shape), node.inputs[0].shape)
+        if self.axes is None:
+            return broadcast_to(reshape(out_grad, (1,) * len(node.inputs[0].shape)), node.inputs[0].shape)
+        else:
+            shape = list(node.inputs[0].shape)
+            for axis in self.axes:
+                shape[axis] = 1
+            return broadcast_to(reshape(out_grad, shape), node.inputs[0].shape)
         ### END YOUR SOLUTION
 
 
@@ -238,17 +244,13 @@ class MatMul(TensorOp):
         grad_lhs = matmul(out_grad, transpose(rhs))
         grad_rhs = matmul(transpose(lhs), out_grad)
 
-        lhs_shape = lhs.realize_cached_data().shape
-        rhs_shape = rhs.realize_cached_data().shape
-        grad_lhs_shape = grad_lhs.realize_cached_data().shape
-        grad_rhs_shape = grad_rhs.realize_cached_data().shape
-
-        if lhs_shape != grad_lhs_shape:
-            axes = tuple(range(len(grad_lhs_shape) - len(lhs_shape)))
-            grad_lhs = summation(grad_lhs, axes=axes)
-        if rhs_shape != grad_rhs_shape:
-            axes = tuple(range(len(grad_rhs_shape) - len(rhs_shape)))
-            grad_rhs = summation(grad_rhs, axes=axes)
+        lhs_shape = lhs.shape
+        rhs_shape = rhs.shape
+    
+        if len(lhs_shape) < len(grad_lhs.shape):
+            grad_lhs = summation(grad_lhs, axes=tuple(range(len(grad_lhs.shape) - len(lhs_shape))))
+        if len(rhs_shape) < len(grad_rhs.shape):
+            grad_rhs = summation(grad_rhs, axes=tuple(range(len(grad_rhs.shape) - len(rhs_shape))))
 
         return grad_lhs, grad_rhs
         ### END YOUR SOLUTION
