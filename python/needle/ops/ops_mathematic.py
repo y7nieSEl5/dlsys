@@ -99,7 +99,7 @@ class PowerScalar(TensorOp):
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return out_grad * MulScalar(self.scalar)(PowerScalar(self.scalar - 1)(node.inputs[0]))
         ### END YOUR SOLUTION
 
 
@@ -117,7 +117,8 @@ class EWiseDiv(TensorOp):
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        lhs, rhs = node.inputs
+        return EWiseDiv()(out_grad, rhs), out_grad * (Negate()(lhs) / PowerScalar(2)(rhs))
         ### END YOUR SOLUTION
 
 
@@ -136,7 +137,7 @@ class DivScalar(TensorOp):
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return out_grad / self.scalar
         ### END YOUR SOLUTION
 
 
@@ -216,7 +217,7 @@ class Summation(TensorOp):
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return broadcast_to(reshape(out_grad, node.inputs[0].shape), node.inputs[0].shape)
         ### END YOUR SOLUTION
 
 
@@ -232,7 +233,24 @@ class MatMul(TensorOp):
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        lhs, rhs = node.inputs
+
+        grad_lhs = matmul(out_grad, transpose(rhs))
+        grad_rhs = matmul(transpose(lhs), out_grad)
+
+        lhs_shape = lhs.realize_cached_data().shape
+        rhs_shape = rhs.realize_cached_data().shape
+        grad_lhs_shape = grad_lhs.realize_cached_data().shape
+        grad_rhs_shape = grad_rhs.realize_cached_data().shape
+
+        if lhs_shape != grad_lhs_shape:
+            axes = tuple(range(len(grad_lhs_shape) - len(lhs_shape)))
+            grad_lhs = summation(grad_lhs, axes=axes)
+        if rhs_shape != grad_rhs_shape:
+            axes = tuple(range(len(grad_rhs_shape) - len(rhs_shape)))
+            grad_rhs = summation(grad_rhs, axes=axes)
+
+        return grad_lhs, grad_rhs
         ### END YOUR SOLUTION
 
 
