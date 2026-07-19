@@ -101,7 +101,46 @@ def nn_epoch(X, y, W1, W2, lr=0.1, batch=100):
     """
 
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    num_examples = X.shape[0]
+    for start in range(0, num_examples, batch):
+        end = min(start + batch, num_examples)
+        X_batch = ndl.Tensor(X[start:end])
+        y_batch = ndl.Tensor(y[start:end])
+
+        Z1 = X_batch @ W1
+        A1 = ndl.ops.relu(Z1)
+        Z2 = A1 @ W2
+
+        loss = softmax_loss(Z2, y_batch)
+        loss.backward()
+
+        W1.data -= lr * W1.grad.data
+        W2.data -= lr * W2.grad.data
+
+        W1.grad = None
+        W2.grad = None
+
+    return W1, W2
+    """
+    num_examples = X.shape[0]
+    for start in range(0, num_examples, batch):
+        end = min(start + batch, num_examples)
+        X_batch = X[start:end]
+        y_batch = y[start:end]
+
+        hidden = np.maximum(X_batch @ W1, 0)
+        logits = hidden @ W2
+
+        probabilities = np.exp(logits)
+        probabilities /= np.sum(probabilities, axis=1, keepdims=True)
+        probabilities[np.arange(end - start), y_batch] -= 1
+
+        hidden_grad = probabilities @ W2.T
+        hidden_grad[hidden <= 0] = 0
+
+        W1 -= lr * (X_batch.T @ hidden_grad) / (end - start)
+        W2 -= lr * (hidden.T @ probabilities) / (end - start)
+    """
     ### END YOUR SOLUTION
 
 
