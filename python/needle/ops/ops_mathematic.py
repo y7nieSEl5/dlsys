@@ -138,7 +138,7 @@ class DivScalar(TensorOp):
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        return out_grad / self.scalar
+        return divide_scalar(out_grad, self.scalar)
         ### END YOUR SOLUTION
 
 
@@ -289,7 +289,7 @@ class Negate(TensorOp):
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        return -out_grad
+        return negate(out_grad)
         ### END YOUR SOLUTION
 
 
@@ -321,7 +321,7 @@ class Exp(TensorOp):
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        return exp(node.inputs[0]) * out_grad
+        return multiply(exp(node.inputs[0]), out_grad)
         ### END YOUR SOLUTION
 
 
