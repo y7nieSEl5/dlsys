@@ -102,14 +102,19 @@ def nn_epoch(X, y, W1, W2, lr=0.1, batch=100):
 
     ### BEGIN YOUR SOLUTION
     num_examples = X.shape[0]
+    num_classes = W2.shape[1]
     for start in range(0, num_examples, batch):
         end = min(start + batch, num_examples)
-        X_batch = ndl.Tensor(X[start:end])
-        y_batch = ndl.Tensor(y[start:end])
+        batch_size = end - start
 
-        Z1 = X_batch @ W1
-        A1 = ndl.ops.relu(Z1)
-        Z2 = A1 @ W2
+        y_onehot = np.zeros((batch_size, num_classes))
+        y_onehot[np.arange(batch_size), y[start:end]] = 1
+
+        X_batch = ndl.Tensor(X[start:end])
+        y_batch = ndl.Tensor(y_onehot)
+
+        Z1 = ndl.ops.matmul(X_batch, W1)
+        Z2 = ndl.ops.matmul(ndl.ops.relu(Z1), W2)
 
         loss = softmax_loss(Z2, y_batch)
         loss.backward()
