@@ -2,6 +2,8 @@
 import needle as ndl
 import numpy as np
 
+from python.needle import data
+
 
 class Optimizer:
     def __init__(self, params):
@@ -75,10 +77,21 @@ class Adam(Optimizer):
             if p not in self.m:
                 self.m[p] = ndl.init.zeros(*p.shape)
                 self.v[p] = ndl.init.zeros(*p.shape)
-            grad_eff = p.grad + self.weight_decay * p.data
-            self.m[p] = self.beta1 * self.m[p] + (1 - self.beta1) * grad_eff
-            self.v[p] = self.beta2 * self.v[p] + (1 - self.beta2) * (grad_eff ** 2)
-            m_hat = self.m[p] / (1 - self.beta1 ** self.t)
-            v_hat = self.v[p] / (1 - self.beta2 ** self.t)
-            p.data -= self.lr * m_hat / (ndl.ops.power_scalar(v_hat, 0.5) + self.eps)
+
+            grad = p.grad.detach()
+            data = p.data.detach()
+
+            grad_eff = grad + self.weight_decay * data
+
+            m = self.beta1 * self.m[p].detach() + (1 - self.beta1) * grad_eff
+            v = self.beta2 * self.v[p].detach() + (1 - self.beta2) * (grad_eff ** 2)
+
+            m_hat = m / (1 - self.beta1 ** self.t)
+            v_hat = v / (1 - self.beta2 ** self.t)
+
+            new_data = data - self.lr * m_hat / (ndl.ops.power_scalar(v_hat, 0.5) + self.eps)
+
+            self.m[p] = m
+            self.v[p] = v
+            p.data = new_data
         ### END YOUR SOLUTION
