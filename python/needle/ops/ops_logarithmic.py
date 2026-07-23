@@ -43,12 +43,26 @@ class LogSumExp(TensorOp):
 
     def compute(self, Z: NDArray) -> NDArray:
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        Z_max = array_api.max(Z, axis=self.axes, keepdims=True)
+        Z_stable = Z - Z_max
+        logsumexp = array_api.log(array_api.sum(array_api.exp(Z_stable), axis=self.axes, keepdims=True))
+        return (Z_max + logsumexp).squeeze()
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad: Tensor, node: Tensor):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        Z = node.inputs[0].realize_cached_data() # (N, C)
+        max_Z = array_api.max(Z, axis=self.axes, keepdims=True) # (N, 1)
+        exp = array_api.exp(Z - array_api.broadcast_to(max_Z, Z.shape)) # (N, C)
+        sum_exp = array_api.sum(exp, axis=self.axes, keepdims=True) # (N, 1)
+        softmax = Tensor(exp / array_api.broadcast_to(sum_exp, exp.shape)) # (N, C)
+
+        if self.axes is not None:
+            shape = list(Z.shape)
+            for axis in self.axes:
+                shape[axis] = 1
+            out_grad = out_grad.reshape(shape)
+        return out_grad.broadcast_to(Z.shape) * softmax # (N, C)
         ### END YOUR SOLUTION
 
 
