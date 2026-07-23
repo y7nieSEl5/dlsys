@@ -25,7 +25,13 @@ class SGD(Optimizer):
 
     def step(self):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        for p in self.params:
+            if p.grad is None:
+                continue
+            if p not in self.u:
+                self.u[p] = ndl.init.zeros(*p.shape)
+            self.u[p] = self.momentum * self.u[p] + (1 - self.momentum) * p.grad
+            p.data -= self.lr * (self.u[p] + self.weight_decay * p.data)
         ### END YOUR SOLUTION
 
     def clip_grad_norm(self, max_norm=0.25):
