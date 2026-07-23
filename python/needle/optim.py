@@ -78,22 +78,18 @@ class Adam(Optimizer):
                 self.m[p] = ndl.init.zeros(*p.shape)
                 self.v[p] = ndl.init.zeros(*p.shape)
 
-            grad = p.grad.numpy()
-            data = p.data.numpy()
-            m = self.m[p].numpy()
-            v = self.v[p].numpy()
+            grad = p.grad.detach()
+            data = p.data.detach()
 
-            grad_eff = grad + self.weight_decay * data
+            if self.weight_decay != 0:
+                grad = grad + self.weight_decay * data
 
-            m_new = self.beta1 * m + (1 - self.beta1) * grad_eff
-            v_new = self.beta2 * v + (1 - self.beta2) * (grad_eff ** 2)
+            self.m[p].data = self.beta1 * self.m[p].data + (1 - self.beta1) * grad.data
+            self.v[p].data = self.beta2 * self.v[p].data + (1 - self.beta2) * (grad.data ** 2)
 
-            m_hat = m_new / (1 - self.beta1 ** self.t)
-            v_hat = v_new / (1 - self.beta2 ** self.t)
+            m_hat = self.m[p].data / (1 - self.beta1 ** self.t)
+            v_hat = self.v[p].data / (1 - self.beta2 ** self.t)
 
-            data_new = data - self.lr * m_hat / (np.sqrt(v_hat) + self.eps)
-
-            self.m[p] = ndl.Tensor(m_new, device=p.device, dtype=p.dtype)
-            self.v[p] = ndl.Tensor(v_new, device=p.device, dtype=p.dtype)
-            p.data = ndl.Tensor(data_new, device=p.device, dtype=p.dtype)
+            new_data = data - self.lr * m_hat / (ndl.ops.power_scalar(v_hat, 0.5) + self.eps)
+            p.data = new_data
         ### END YOUR SOLUTION
