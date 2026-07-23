@@ -78,20 +78,22 @@ class Adam(Optimizer):
                 self.m[p] = ndl.init.zeros(*p.shape)
                 self.v[p] = ndl.init.zeros(*p.shape)
 
-            grad = p.grad.detach()
-            data = p.data.detach()
+            grad = p.grad.numpy()
+            data = p.data.numpy()
+            m = self.m[p].numpy()
+            v = self.v[p].numpy()
 
             grad_eff = grad + self.weight_decay * data
 
-            m = self.beta1 * self.m[p].detach() + (1 - self.beta1) * grad_eff
-            v = self.beta2 * self.v[p].detach() + (1 - self.beta2) * (grad_eff ** 2)
+            m_new = self.beta1 * m + (1 - self.beta1) * grad_eff
+            v_new = self.beta2 * v + (1 - self.beta2) * (grad_eff ** 2)
 
-            m_hat = m / (1 - self.beta1 ** self.t)
-            v_hat = v / (1 - self.beta2 ** self.t)
+            m_hat = m_new / (1 - self.beta1 ** self.t)
+            v_hat = v_new / (1 - self.beta2 ** self.t)
 
-            new_data = data - self.lr * m_hat / (ndl.ops.power_scalar(v_hat, 0.5) + self.eps)
+            data_new = data - self.lr * m_hat / (np.sqrt(v_hat) + self.eps)
 
-            self.m[p] = m
-            self.v[p] = v
-            p.data = new_data
+            self.m[p] = ndl.Tensor(m_new, device=p.device, dtype=p.dtype)
+            self.v[p] = ndl.Tensor(v_new, device=p.device, dtype=p.dtype)
+            p.data = ndl.Tensor(data_new, device=p.device, dtype=p.dtype)
         ### END YOUR SOLUTION
