@@ -19,16 +19,20 @@ class MNISTDataset(Dataset):
 
     def __getitem__(self, index) -> object:
         ### BEGIN YOUR SOLUTION
-        img = self.images[index]          # 形状 (28, 28), uint8
-        # 添加通道维，使其变为 (28, 28, 1)，以兼容 RandomCrop
-        img = img[..., np.newaxis]        # 或者 np.expand_dims(img, axis=-1)
-        label = self.labels[index]        # 标量
+        img = self.images[index]
+        if img.ndim == 1:
+            img = img.reshape(28, 28)
 
-        if self.transforms is not None:
+        if self.transforms:
+            # Add channel dimension -> (28, 28, 1)
+            if img.ndim == 2:
+                img = np.expand_dims(img, axis=-1)
             for t in self.transforms:
-                img = t(img)              # 只传图像，不传 label
-
-        return img, label 
+                img = t(img)
+            return img, self.labels[index]
+        else:
+            # No transforms: return flattened image
+            return img.reshape((-1, 28 * 28)), self.labels[index]
         ### END YOUR SOLUTION
 
     def __len__(self) -> int:
