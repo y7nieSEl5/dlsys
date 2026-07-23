@@ -146,7 +146,7 @@ class BatchNorm1d(Module):
         self.weight = Parameter(init.ones(dim, device=device, dtype=dtype)) # (D,)
         self.bias = Parameter(init.zeros(dim, device=device, dtype=dtype)) # (D,)
         self.running_mean = init.zeros(dim, device=device, dtype=dtype) # (D,)
-        self.running_var = init.ones(dim, device=device, dtype=dtype) # (D
+        self.running_var = init.ones(dim, device=device, dtype=dtype) # (D,)
         ### END YOUR SOLUTION
 
     def forward(self, x: Tensor) -> Tensor:
