@@ -30,8 +30,9 @@ class SGD(Optimizer):
                 continue
             if p not in self.u:
                 self.u[p] = ndl.init.zeros(*p.shape)
-            self.u[p] = self.momentum * self.u[p] + (1 - self.momentum) * p.grad
-            p.data -= self.lr * (self.u[p] + self.weight_decay * p.data)
+            grad_eff = p.grad + self.weight_decay * p.data
+            self.u[p] = self.momentum * self.u[p] + (1 - self.momentum) * grad_eff
+            p.data -= self.lr * self.u[p]
         ### END YOUR SOLUTION
 
     def clip_grad_norm(self, max_norm=0.25):
