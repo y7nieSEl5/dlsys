@@ -317,14 +317,18 @@ class NDArray:
         """
 
         ### BEGIN YOUR SOLUTION
-        if len(new_shape) < self.ndim:
-            raise ValueError
-        # Pad the original shape with 1s on the left if necessary
-        padded_shape = (1,) * (len(new_shape) - self.ndim) + self.shape
-        padded_strides = (0,) * (len(new_shape) - self.ndim) + self.strides
+        new_strides = ()
         for i in range(len(new_shape)):
-            if padded_shape[i] != 1 and padded_shape[i] != new_shape[i]:
-                raise ValueError
+            if i < len(self.shape):
+                if self.shape[i] == 1:
+                    new_strides += (0,)
+                elif self.shape[i] == new_shape[i]:
+                    new_strides += (self.strides[i],)
+                else:
+                    raise ValueError
+            else:
+                new_strides += (0,)
+        padded_strides = (0,) * (len(new_shape) - len(new_strides)) + new_strides
         return NDArray.make(new_shape, strides=padded_strides, device=self.device, handle=self._handle, offset=self._offset)
         ### END YOUR SOLUTION]
 
