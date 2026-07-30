@@ -262,7 +262,9 @@ class NDArray:
         """
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        if prod(new_shape) != self.size or not self.is_compact():
+            raise ValueError
+        return NDArray.make(new_shape, device=self.device, handle=self._handle, offset=self._offset)
         ### END YOUR SOLUTION
 
     def permute(self, new_axes: tuple[int, ...]) -> "NDArray":
@@ -287,7 +289,11 @@ class NDArray:
         """
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        if sorted(new_axes) != list(range(self.ndim)):
+            raise ValueError
+        new_shape = tuple(self.shape[i] for i in new_axes)
+        new_strides = tuple(self.strides[i] for i in new_axes)
+        return NDArray.make(new_shape, strides=new_strides, device=self.device, handle=self._handle, offset=self._offset)
         ### END YOUR SOLUTION
 
     def broadcast_to(self, new_shape: tuple[int, ...]) -> "NDArray":
@@ -311,7 +317,15 @@ class NDArray:
         """
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        if len(new_shape) < self.ndim:
+            raise ValueError
+        # Pad the original shape with 1s on the left if necessary
+        padded_shape = (1,) * (len(new_shape) - self.ndim) + self.shape
+        padded_strides = (0,) * (len(new_shape) - self.ndim) + self.strides
+        for i in range(len(new_shape)):
+            if padded_shape[i] != 1 and padded_shape[i] != new_shape[i]:
+                raise ValueError
+        return NDArray.make(new_shape, strides=padded_strides, device=self.device, handle=self._handle, offset=self._offset)
         ### END YOUR SOLUTION]
 
     ### Get and set elements
