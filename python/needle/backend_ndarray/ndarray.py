@@ -328,8 +328,7 @@ class NDArray:
                     raise ValueError
             else:
                 new_strides += (0,)
-        padded_strides = (0,) * (len(new_shape) - len(new_strides)) + new_strides
-        return NDArray.make(new_shape, strides=padded_strides, device=self.device, handle=self._handle, offset=self._offset)
+        return NDArray.make(new_shape, strides=new_strides, device=self.device, handle=self._handle, offset=self._offset)
         ### END YOUR SOLUTION]
 
     ### Get and set elements
@@ -396,7 +395,10 @@ class NDArray:
         assert len(slices) == self.ndim, "Need indexes equal to number of dimensions"
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        new_shape = tuple(s.stop - s.start for s in slices)
+        new_strides = tuple(self.strides[i] * s.step for i, s in enumerate(slices))
+        new_offset = self._offset + sum(s.start * self.strides[i] for i, s in enumerate(slices))
+        return NDArray.make(new_shape, strides=new_strides, device=self.device, handle=self._handle, offset=new_offset)
         ### END YOUR SOLUTION
 
     def __setitem__(self, idxs: int | slice | tuple[int | slice, ...], other: Union["NDArray", float]) -> None:
