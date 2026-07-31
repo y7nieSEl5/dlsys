@@ -101,7 +101,7 @@ __global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size, Cud
   if (gid < size) {
     size_t idx = offset;
     size_t tmp = gid;
-    for (size_t i = shape.size - 1; i >= 0; i--) {
+    for (int i = shape.size - 1; i >= 0; i--) {
       size_t dim_idx = tmp % shape.data[i];
       tmp = tmp / shape.data[i];
       idx += dim_idx * strides.data[i];
@@ -142,7 +142,7 @@ __global__ void EwiseSetitemKernel(const scalar_t* a, scalar_t* out, size_t size
   if (gid < size) {
     size_t idx = offset;
     size_t tmp = gid;
-    for (size_t i = shape.size - 1; i >= 0; i--) {
+    for (int i = shape.size - 1; i >= 0; i--) {
       size_t dim_idx = tmp % shape.data[i];
       tmp = tmp / shape.data[i];
       idx += dim_idx * strides.data[i];
@@ -181,7 +181,7 @@ __global__ void ScalarSetitemKernel(size_t size, scalar_t val, scalar_t* out, Cu
   if (gid < size) {
     size_t idx = offset;
     size_t tmp = gid;
-    for (size_t i = shape.size - 1; i >= 0; i--) {
+    for (int i = shape.size - 1; i >= 0; i--) {
       size_t dim_idx = tmp % shape.data[i];
       tmp = tmp / shape.data[i];
       idx += dim_idx * strides.data[i];
