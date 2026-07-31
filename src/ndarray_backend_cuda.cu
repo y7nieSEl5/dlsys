@@ -331,20 +331,20 @@ void ScalarAdd(const CudaArray& a, scalar_t val, CudaArray* out) {
     name##Kernel<<<dim.grid, dim.block>>>(a.ptr, val, out->ptr, out->size); \
   }
 
-DEFINE_EWISE_BINARY_OP(ewise_mul, *)
-DEFINE_SCALAR_BINARY_OP(scalar_mul, *)
-DEFINE_EWISE_BINARY_OP(ewise_div, /)
-DEFINE_SCALAR_BINARY_OP(scalar_div, /)
-DEFINE_SCALAR_BINARY_FUNC(scalar_power, powf)
-DEFINE_EWISE_BINARY_FUNC(ewise_maximum, fmaxf)
-DEFINE_SCALAR_BINARY_FUNC(scalar_maximum, fmaxf)
-DEFINE_EWISE_BINARY_OP(ewise_eq, ==)
-DEFINE_SCALAR_BINARY_OP(scalar_eq, ==)
-DEFINE_EWISE_BINARY_OP(ewise_ge, >=)
-DEFINE_SCALAR_BINARY_OP(scalar_ge, >=)
-DEFINE_EWISE_UNARY_OP(ewise_log, logf)
-DEFINE_EWISE_UNARY_OP(ewise_exp, expf)
-DEFINE_EWISE_UNARY_OP(ewise_tanh, tanhf)
+DEFINE_EWISE_BINARY_OP(EwiseMul, *)
+DEFINE_SCALAR_BINARY_OP(ScalarMul, *)
+DEFINE_EWISE_BINARY_OP(EwiseDiv, /)
+DEFINE_SCALAR_BINARY_OP(ScalarDiv, /)
+DEFINE_SCALAR_BINARY_FUNC(ScalarPower, powf)
+DEFINE_EWISE_BINARY_FUNC(EwiseMaximum, fmaxf)
+DEFINE_SCALAR_BINARY_FUNC(ScalarMaximum, fmaxf)
+DEFINE_EWISE_BINARY_OP(EwiseEq, ==)
+DEFINE_SCALAR_BINARY_OP(ScalarEq, ==)
+DEFINE_EWISE_BINARY_OP(EwiseGe, >=)
+DEFINE_SCALAR_BINARY_OP(ScalarGe, >=)
+DEFINE_EWISE_UNARY_OP(EwiseLog, logf)
+DEFINE_EWISE_UNARY_OP(EwiseExp, expf)
+DEFINE_EWISE_UNARY_OP(EwiseTanh, tanhf)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Elementwise and scalar operations
