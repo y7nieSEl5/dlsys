@@ -192,6 +192,43 @@ void ScalarAdd(const AlignedArray& a, scalar_t val, AlignedArray* out) {
  * signatures above.
  */
 
+# define DEFINE_EWISE_OP_FUNC(func_name, op) \
+  void func_name(const AlignedArray& a, const AlignedArray& b, AlignedArray* out) { \
+    for (size_t i = 0; i < a.size; i++) { \
+      out->ptr[i] = a.ptr[i] op b.ptr[i]; \
+    } \
+  }
+
+# define DEFINE_SCALAR_OP_FUNC(func_name, op) \
+  void func_name(const AlignedArray& a, scalar_t val, AlignedArray* out) { \
+    for (size_t i = 0; i < a.size; i++) { \
+      out->ptr[i] = a.ptr[i] op val; \
+    } \
+  }
+
+# define DEFINE_EWISE_FUNC(func_name, func_body) \
+  void func_name(const AlignedArray& a, AlignedArray* out) { \
+    for (size_t i = 0; i < a.size; i++) { \
+      out->ptr[i] = func_body(a.ptr[i]); \
+    } \
+  }
+
+DEFINE_EWISE_OP_FUNC(EwiseMul, *)
+DEFINE_SCALAR_OP_FUNC(ScalarMul, *)
+DEFINE_EWISE_OP_FUNC(EwiseDiv, /)
+DEFINE_SCALAR_OP_FUNC(ScalarDiv, /)
+DEFINE_SCALAR_OP_FUNC(ScalarPower, pow(a.ptr[i], val))
+DEFINE_EWISE_OP_FUNC(EwiseMaximum, std::max)
+DEFINE_SCALAR_OP_FUNC(ScalarMaximum, std::max)
+DEFINE_EWISE_OP_FUNC(EwiseEq, ==)
+DEFINE_SCALAR_OP_FUNC(ScalarEq, ==)
+DEFINE_EWISE_OP_FUNC(EwiseGe, >=)
+DEFINE_SCALAR_OP_FUNC(ScalarGe, >=)
+DEFINE_EWISE_FUNC(EwiseLog, std::log)
+DEFINE_EWISE_FUNC(EwiseExp, std::exp)
+DEFINE_EWISE_FUNC(EwiseTanh, std::tanh)
+
+
 
 void Matmul(const AlignedArray& a, const AlignedArray& b, AlignedArray* out, uint32_t m, uint32_t n,
             uint32_t p) {
@@ -373,26 +410,27 @@ PYBIND11_MODULE(ndarray_backend_cpu, m) {
   m.def("ewise_add", EwiseAdd);
   m.def("scalar_add", ScalarAdd);
 
-  // m.def("ewise_mul", EwiseMul);
-  // m.def("scalar_mul", ScalarMul);
-  // m.def("ewise_div", EwiseDiv);
-  // m.def("scalar_div", ScalarDiv);
-  // m.def("scalar_power", ScalarPower);
+  m.def("ewise_mul", EwiseMul);
+  m.def("scalar_mul", ScalarMul);
+  m.def("ewise_div", EwiseDiv);
+  m.def("scalar_div", ScalarDiv);
+  m.def("scalar_power", ScalarPower);
 
-  // m.def("ewise_maximum", EwiseMaximum);
-  // m.def("scalar_maximum", ScalarMaximum);
-  // m.def("ewise_eq", EwiseEq);
-  // m.def("scalar_eq", ScalarEq);
-  // m.def("ewise_ge", EwiseGe);
-  // m.def("scalar_ge", ScalarGe);
+  m.def("ewise_maximum", EwiseMaximum);
+  m.def("scalar_maximum", ScalarMaximum);
+  m.def("ewise_eq", EwiseEq);
+  m.def("scalar_eq", ScalarEq);
+  m.def("ewise_ge", EwiseGe);
+  m.def("scalar_ge", ScalarGe);
 
-  // m.def("ewise_log", EwiseLog);
-  // m.def("ewise_exp", EwiseExp);
-  // m.def("ewise_tanh", EwiseTanh);
+  m.def("ewise_log", EwiseLog);
+  m.def("ewise_exp", EwiseExp);
+  m.def("ewise_tanh", EwiseTanh);
 
-  // m.def("matmul", Matmul);
-  // m.def("matmul_tiled", MatmulTiled);
+  m.def("matmul", Matmul);
+  m.def("matmul_tiled", MatmulTiled);
 
-  // m.def("reduce_max", ReduceMax);
-  // m.def("reduce_sum", ReduceSum);
+  m.def("reduce_max", ReduceMax);
+  m.def("reduce_sum", ReduceSum);
 }
+
