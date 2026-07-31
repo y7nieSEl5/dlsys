@@ -284,7 +284,7 @@ inline void AlignedDot(const float* __restrict__ a,
 
   /// BEGIN SOLUTION
   for (uint32_t i = 0; i < TILE; i++) {
-    for (uint32_t j = 0; j < TILE; j+=TILE) {
+    for (uint32_t j = 0; j < TILE; j++) {
       float sum = 0;
       for (uint32_t k = 0; k < TILE; k++) {
         sum += a[i * TILE + k] * b[k * TILE + j];
