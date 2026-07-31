@@ -350,8 +350,6 @@ DEFINE_EWISE_UNARY_OP(EwiseTanh, tanhf)
 // Elementwise and scalar operations
 ////////////////////////////////////////////////////////////////////////////////
 
-#define TILE 16
-
 __global__ void MatmulKernel(const scalar_t* a, const scalar_t* b, scalar_t* out, uint32_t M,
                              uint32_t N, uint32_t P) {
 
