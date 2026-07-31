@@ -98,7 +98,16 @@ __global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size, Cud
   size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
 
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
+  if (gid < size) {
+    size_t idx = offset;
+    size_t tmp = gid;
+    for (size_t i = 0; i < shape.size; i++) {
+      size_t dim_idx = tmp / shape.data[i];
+      tmp = tmp % shape.data[i];
+      idx += dim_idx * strides.data[i];
+    }
+    out[gid] = a[idx];
+  }
   /// END SOLUTION
 }
 
