@@ -384,6 +384,16 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
 // Max and sum reductions
 ////////////////////////////////////////////////////////////////////////////////
 
+__global__ void ReduceMaxKernel(const scalar_t* a, scalar_t* out, size_t reduce_size) {
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < out->size) {
+    scalar_t max_val = a[gid * reduce_size];
+    for (size_t i = 1; i < reduce_size; i++) {
+      max_val = fmaxf(max_val, a[gid * reduce_size + i]);
+    }
+    out[gid] = max_val;
+  }
+}
 
 void ReduceMax(const CudaArray& a, CudaArray* out, size_t reduce_size) {
   /**
@@ -396,11 +406,27 @@ void ReduceMax(const CudaArray& a, CudaArray* out, size_t reduce_size) {
    *   redice_size: size of the dimension to reduce over
    */
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < out->size) {
+    scalar_t max_val = a.ptr[gid * reduce_size];
+    for (size_t i = 1; i < reduce_size; i++) {
+      max_val = fmaxf(max_val, a.ptr[gid * reduce_size + i]);
+    }
+    out->ptr[gid] = max_val;
+  }
   /// END SOLUTION
 }
 
-
+__global__ void ReduceSumKernel(const scalar_t* a, scalar_t* out, size_t reduce_size) {
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < out->size) {
+    scalar_t sum = 0;
+    for (size_t i = 0; i < reduce_size; i++) {
+      sum += a[gid * reduce_size + i];
+    }
+    out[gid] = sum;
+  }
+}
 
 void ReduceSum(const CudaArray& a, CudaArray* out, size_t reduce_size) {
   /**
@@ -413,7 +439,14 @@ void ReduceSum(const CudaArray& a, CudaArray* out, size_t reduce_size) {
    *   redice_size: size of the dimension to reduce over
    */
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < out->size) {
+    scalar_t sum = 0;
+    for (size_t i = 0; i < reduce_size; i++) {
+      sum += a.ptr[gid * reduce_size + i];
+    }
+    out->ptr[gid] = sum;
+  }
   /// END SOLUTION
 }
 
