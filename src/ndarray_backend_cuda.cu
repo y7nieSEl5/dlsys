@@ -134,7 +134,22 @@ void Compact(const CudaArray& a, CudaArray* out, std::vector<int32_t> shape,
                                          VecToCuda(strides), offset);
 }
 
+__global__ void EwiseSetitemKernel(const scalar_t* a, scalar_t* out, size_t size, CudaVec shape,
+                                  CudaVec strides, size_t offset) {
 
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (gid < size) {
+    size_t idx = offset;
+    size_t tmp = gid;
+    for (size_t i = 0; i < shape.size; i++) {
+      size_t dim_idx = tmp / shape.data[i];
+      tmp = tmp % shape.data[i];
+      idx += dim_idx * strides.data[i];
+    }
+    out[idx] = a[gid];
+  }
+}
 
 void EwiseSetitem(const CudaArray& a, CudaArray* out, std::vector<int32_t> shape,
                   std::vector<int32_t> strides, size_t offset) {
@@ -158,7 +173,22 @@ void EwiseSetitem(const CudaArray& a, CudaArray* out, std::vector<int32_t> shape
   /// END SOLUTION
 }
 
+__global__ void ScalarSetitemKernel(size_t size, scalar_t val, scalar_t* out, CudaVec shape,
+                                   CudaVec strides, size_t offset) {
+                                    
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
 
+  if (gid < size) {
+    size_t idx = offset;
+    size_t tmp = gid;
+    for (size_t i = 0; i < shape.size; i++) {
+      size_t dim_idx = tmp / shape.data[i];
+      tmp = tmp % shape.data[i];
+      idx += dim_idx * strides.data[i];
+    }
+    out[idx] = val;
+  }
+}
 
 void ScalarSetitem(size_t size, scalar_t val, CudaArray* out, std::vector<int32_t> shape,
                    std::vector<int32_t> strides, size_t offset) {
