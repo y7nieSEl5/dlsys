@@ -192,42 +192,34 @@ void ScalarAdd(const AlignedArray& a, scalar_t val, AlignedArray* out) {
  * signatures above.
  */
 
-# define DEFINE_EWISE_OP_FUNC(func_name, op) \
+#define DEFINE_EWISE_BINARY_EXPR(func_name, expr) \
   void func_name(const AlignedArray& a, const AlignedArray& b, AlignedArray* out) { \
     for (size_t i = 0; i < a.size; i++) { \
-      out->ptr[i] = a.ptr[i] op b.ptr[i]; \
+      out->ptr[i] = expr; \
     } \
   }
 
-# define DEFINE_SCALAR_OP_FUNC(func_name, op) \
+#define DEFINE_SCALAR_BINARY_EXPR(func_name, expr) \
   void func_name(const AlignedArray& a, scalar_t val, AlignedArray* out) { \
     for (size_t i = 0; i < a.size; i++) { \
-      out->ptr[i] = a.ptr[i] op val; \
+      out->ptr[i] = expr; \
     } \
   }
 
-# define DEFINE_EWISE_FUNC(func_name, func_body) \
-  void func_name(const AlignedArray& a, AlignedArray* out) { \
-    for (size_t i = 0; i < a.size; i++) { \
-      out->ptr[i] = func_body(a.ptr[i]); \
-    } \
-  }
-
-DEFINE_EWISE_OP_FUNC(EwiseMul, *)
-DEFINE_SCALAR_OP_FUNC(ScalarMul, *)
-DEFINE_EWISE_OP_FUNC(EwiseDiv, /)
-DEFINE_SCALAR_OP_FUNC(ScalarDiv, /)
-DEFINE_SCALAR_OP_FUNC(ScalarPower, pow(a.ptr[i], val))
-DEFINE_EWISE_OP_FUNC(EwiseMaximum, std::max)
-DEFINE_SCALAR_OP_FUNC(ScalarMaximum, std::max)
-DEFINE_EWISE_OP_FUNC(EwiseEq, ==)
-DEFINE_SCALAR_OP_FUNC(ScalarEq, ==)
-DEFINE_EWISE_OP_FUNC(EwiseGe, >=)
-DEFINE_SCALAR_OP_FUNC(ScalarGe, >=)
-DEFINE_EWISE_FUNC(EwiseLog, std::log)
-DEFINE_EWISE_FUNC(EwiseExp, std::exp)
-DEFINE_EWISE_FUNC(EwiseTanh, std::tanh)
-
+DEFINE_EWISE_BINARY_EXPR(EwiseMul, a.ptr[i] * b.ptr[i])
+DEFINE_SCALAR_BINARY_EXPR(ScalarMul, a.ptr[i] * val)
+DEFINE_EWISE_BINARY_EXPR(EwiseDiv, a.ptr[i] / b.ptr[i])
+DEFINE_SCALAR_BINARY_EXPR(ScalarDiv, a.ptr[i] / val)
+DEFINE_SCALAR_BINARY_EXPR(ScalarPower, std::pow(a.ptr[i], val))
+DEFINE_EWISE_BINARY_EXPR(EwiseMaximum, std::max(a.ptr[i], b.ptr[i]))
+DEFINE_SCALAR_BINARY_EXPR(ScalarMaximum, std::max(a.ptr[i], val))
+DEFINE_EWISE_BINARY_EXPR(EwiseEq, a.ptr[i] == b.ptr[i] ? 1.0f : 0.0f)
+DEFINE_SCALAR_BINARY_EXPR(ScalarEq, a.ptr[i] == val ? 1.0f : 0.0f)
+DEFINE_EWISE_BINARY_EXPR(EwiseGe, a.ptr[i] >= b.ptr[i] ? 1.0f : 0.0f)
+DEFINE_SCALAR_BINARY_EXPR(ScalarGe, a.ptr[i] >= val ? 1.0f : 0.0f)
+DEFINE_EWISE_BINARY_EXPR(EwiseLog, std::log(a.ptr[i]))
+DEFINE_EWISE_BINARY_EXPR(EwiseExp, std::exp(a.ptr[i]))
+DEFINE_EWISE_BINARY_EXPR(EwiseTanh, std::tanh(a.ptr[i]))
 
 
 void Matmul(const AlignedArray& a, const AlignedArray& b, AlignedArray* out, uint32_t m, uint32_t n,
