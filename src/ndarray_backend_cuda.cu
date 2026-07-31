@@ -381,7 +381,9 @@ __global__ void MatmulKernel(const scalar_t* a, const scalar_t* b, scalar_t* out
 
     __syncthreads();
   }
-  out[row * P + col] = sum;
+  if (row < M && col < P) {
+    out[row * P + col] = sum;
+  }
 }
 
 void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, uint32_t N,
