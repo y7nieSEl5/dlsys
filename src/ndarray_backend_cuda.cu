@@ -350,6 +350,41 @@ DEFINE_EWISE_UNARY_OP(EwiseTanh, tanhf)
 // Elementwise and scalar operations
 ////////////////////////////////////////////////////////////////////////////////
 
+#define TILE 16
+
+__global__ void MatmulKernel(const scalar_t* a, const scalar_t* b, scalar_t* out, uint32_t M,
+                             uint32_t N, uint32_t P) {
+
+  int row = blockIdx.x * TILE + threadIdx.x;
+  int col = blockIdx.y * TILE + threadIdx.y;
+
+  __shared__ float tile_a[TILE][TILE];
+  __shared__ float tile_b[TILE][TILE];
+  float sum = 0.0f;
+
+  for (int t = 0; t < (N + TILE - 1) / TILE; ++t) {
+    if (row < M && t * TILE + threadIdx.y < N) {
+      tile_a[threadIdx.x][threadIdx.y] = a[row * N + t * TILE + threadIdx.y];
+    } else {
+      tile_a[threadIdx.x][threadIdx.y] = 0.0f;
+    }
+
+    if (col < P && t * TILE + threadIdx.x < N) {
+      tile_b[threadIdx.x][threadIdx.y] = b[(t * TILE + threadIdx.x) * P + col];
+    } else {
+      tile_b[threadIdx.x][threadIdx.y] = 0.0f;
+    }
+
+    __syncthreads();
+
+    for (int k = 0; k < TILE; ++k) {
+      sum += tile_a[threadIdx.x][k] * tile_b[k][threadIdx.y];
+    }
+
+    __syncthreads();
+  }
+  out[row * P + col] = sum;
+}
 
 void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, uint32_t N,
             uint32_t P) {
@@ -376,7 +411,9 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
    */
 
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
+  dim3 block(TILE, TILE);
+  dim3 grid((M + TILE - 1) / TILE, (P + TILE - 1) / TILE);
+  MatmulKernel<<<grid, block>>>(a.ptr, b.ptr, out->ptr, M, N, P);
   /// END SOLUTION
 }
 
