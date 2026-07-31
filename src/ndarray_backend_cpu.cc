@@ -89,7 +89,17 @@ void EwiseSetitem(const AlignedArray& a, AlignedArray* out, std::vector<int32_t>
    *   offset: offset of the *out* array (not a, which has zero offset, being compact)
    */
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
+  size_t ndim = shape.size();
+  for (size_t i = 0; i < a.size; i++) {
+    size_t idx = i;
+    size_t out_idx = offset;
+    for (size_t d = 0; d < ndim; d++) {
+      size_t cur_dim_idx = idx / (a.size / shape[d]);
+      out_idx += cur_dim_idx * strides[d];
+      idx %= (a.size / shape[d]);
+    }
+    out->ptr[out_idx] = a.ptr[i];
+  }
   /// END SOLUTION
 }
 
@@ -108,6 +118,17 @@ void ScalarSetitem(const size_t size, scalar_t val, AlignedArray* out, std::vect
    *   strides: strides of the out array
    *   offset: offset of the out array
    */
+  size_t ndim = shape.size();
+  for (size_t i = 0; i < size; i++) {
+    size_t idx = i;
+    size_t out_idx = offset;
+    for (size_t d = 0; d < ndim; d++) {
+      size_t cur_dim_idx = idx / (size / shape[d]);
+      out_idx += cur_dim_idx * strides[d];
+      idx %= (size / shape[d]);
+    }
+    out->ptr[out_idx] = val;
+  }
 
   /// BEGIN SOLUTION
   assert(false && "Not Implemented");
