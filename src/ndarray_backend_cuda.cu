@@ -406,14 +406,9 @@ void ReduceMax(const CudaArray& a, CudaArray* out, size_t reduce_size) {
    *   redice_size: size of the dimension to reduce over
    */
   /// BEGIN SOLUTION
-  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (gid < out->size) {
-    scalar_t max_val = a.ptr[gid * reduce_size];
-    for (size_t i = 1; i < reduce_size; i++) {
-      max_val = fmaxf(max_val, a.ptr[gid * reduce_size + i]);
-    }
-    out->ptr[gid] = max_val;
-  }
+  int threads_per_block = 256;
+  int num_blocks = (out->size + threads_per_block - 1) / threads_per_block;
+  ReduceMaxKernel<<<num_blocks, threads_per_block>>>(a.ptr, out->ptr, reduce_size);
   /// END SOLUTION
 }
 
@@ -439,14 +434,9 @@ void ReduceSum(const CudaArray& a, CudaArray* out, size_t reduce_size) {
    *   redice_size: size of the dimension to reduce over
    */
   /// BEGIN SOLUTION
-  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (gid < out->size) {
-    scalar_t sum = 0;
-    for (size_t i = 0; i < reduce_size; i++) {
-      sum += a.ptr[gid * reduce_size + i];
-    }
-    out->ptr[gid] = sum;
-  }
+  int threads_per_block = 256;xs
+  int num_blocks = (out->size + threads_per_block - 1) / threads_per_block;
+  ReduceSumKernel<<<num_blocks, threads_per_block>>>(a.ptr, out->ptr, reduce_size);
   /// END SOLUTION
 }
 
