@@ -317,6 +317,9 @@ void MatmulTiled(const AlignedArray& a, const AlignedArray& b, AlignedArray* out
    *
    */
   /// BEGIN SOLUTION
+  for (uint32_t i = 0; i < m * p; i++){
+    out->ptr[i] = 0.0f;
+  }
   for (uint32_t i = 0; i < m / TILE; i++) {
     for (uint32_t j = 0; j < p / TILE; j++) {
       for (uint32_t k = 0; k < n / TILE; k++) {
