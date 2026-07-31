@@ -141,7 +141,11 @@ void EwiseSetitem(const CudaArray& a, CudaArray* out, std::vector<int32_t> shape
    *   offset: offset of the *out* array (not a, which has zero offset, being compact)
    */
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
+  CudaDims dim = CudaOneDim(a.size);
+  EwiseSetitemKernel<<<dim.grid, dim.block>>>(a.ptr, out->ptr, a.size, 
+                                              VecToCuda(shape), 
+                                              VecToCuda(strides), 
+                                              offset);
   /// END SOLUTION
 }
 
@@ -163,7 +167,11 @@ void ScalarSetitem(size_t size, scalar_t val, CudaArray* out, std::vector<int32_
    *   offset: offset of the out array
    */
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
+  CudaDims dim = CudaOneDim(size);
+  ScalarSetitemKernel<<<dim.grid, dim.block>>>(size, val, out, 
+                                              VecToCuda(shape), 
+                                              VecToCuda(strides), 
+                                              offset);
   /// END SOLUTION
 }
 
