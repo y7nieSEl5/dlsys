@@ -318,17 +318,21 @@ class NDArray:
         """
 
         ### BEGIN YOUR SOLUTION
-        new_strides = ()
-        for i in range(len(new_shape)):
-            if i < len(self.shape):
-                if self.shape[i] == 1:
-                    new_strides += (0,)
-                elif self.shape[i] == new_shape[i]:
-                    new_strides += (self.strides[i],)
-                else:
-                    raise ValueError
-            else:
-                new_strides += (0,)
+        if len(new_shape) < self.ndim:
+            raise ValueError("cannot broadcast to fewer dimensions")
+
+        ndim_diff = len(new_shape) - self.ndim
+        input_shape = (1,) * ndim_diff + self.shape
+        input_strides = (0,) * ndim_diff + self.strides
+        new_strides = tuple(
+            0 if input_dim == 1 and output_dim != 1 else stride
+            for input_dim, output_dim, stride in zip(
+                input_shape, new_shape, input_strides
+            )
+            if input_dim == output_dim or input_dim == 1
+        )
+        if len(new_strides) != len(new_shape):
+            raise ValueError("incompatible broadcast shape")
         return NDArray.make(new_shape, strides=new_strides, device=self.device, handle=self._handle, offset=self._offset)
         ### END YOUR SOLUTION]
 
@@ -579,13 +583,14 @@ class NDArray:
 
         if axis is None:
             view = self.compact().reshape((1,) * (self.ndim - 1) + (prod(self.shape),))
-            #out = NDArray.make((1,) * self.ndim, device=self.device)
-            out = NDArray.make((1,), device=self.device)
+            out_shape = (1,) * self.ndim if keepdims else (1,)
+            out = NDArray.make(out_shape, device=self.device)
 
         else:
             if isinstance(axis, (tuple, list)):
                 assert len(axis) == 1, "Only support reduction over a single axis"
                 axis = axis[0]
+            axis = axis % self.ndim
 
             view = self.permute(
                 tuple([a for a in range(self.ndim) if a != axis]) + (axis,)
@@ -598,15 +603,57 @@ class NDArray:
             )
         return view, out
 
-    def sum(self, axis: int | tuple[int, ...] | list[int] | None = None, keepdims: bool = False) -> "NDArray":
-        view, out = self.reduce_view_out(axis, keepdims=keepdims)
-        self.device.reduce_sum(view.compact()._handle, out._handle, view.shape[-1])
+    def sum(
+        self,
+        axis: int | tuple[int, ...] | list[int] | None = None,
+        keepdims: bool = False,
+        out: "NDArray | None" = None,
+    ) -> "NDArray":
+        if isinstance(axis, (tuple, list)) and len(axis) > 1:
+            result = self
+            for reduction_axis in sorted(axis, reverse=True):
+                result = result.sum(axis=reduction_axis, keepdims=keepdims)
+            return result if out is None else result._copy_to(out)
+        view, reduced = self.reduce_view_out(axis, keepdims=keepdims)
+        self.device.reduce_sum(view.compact()._handle, reduced._handle, view.shape[-1])
+        return reduced if out is None else reduced._copy_to(out)
+
+    def max(
+        self,
+        axis: int | tuple[int, ...] | list[int] | None = None,
+        keepdims: bool = False,
+        out: "NDArray | None" = None,
+    ) -> "NDArray":
+        if isinstance(axis, (tuple, list)) and len(axis) > 1:
+            result = self
+            for reduction_axis in sorted(axis, reverse=True):
+                result = result.max(axis=reduction_axis, keepdims=keepdims)
+            return result if out is None else result._copy_to(out)
+        view, reduced = self.reduce_view_out(axis, keepdims=keepdims)
+        self.device.reduce_max(view.compact()._handle, reduced._handle, view.shape[-1])
+        return reduced if out is None else reduced._copy_to(out)
+
+    def _copy_to(self, out: "NDArray") -> "NDArray":
+        """Copy this array into an output array and return the output array."""
+        if not isinstance(out, NDArray) or out.shape != self.shape:
+            raise ValueError("output has the wrong shape or device type")
+        out[tuple(slice(None) for _ in range(out.ndim))] = self
         return out
 
-    def max(self, axis: int | tuple[int, ...] | list[int] | None = None, keepdims: bool = False) -> "NDArray":
-        view, out = self.reduce_view_out(axis, keepdims=keepdims)
-        self.device.reduce_max(view.compact()._handle, out._handle, view.shape[-1])
-        return out
+    def squeeze(self, axis: int | tuple[int, ...] | list[int] | None = None) -> "NDArray":
+        """Return a view with dimensions of length one removed."""
+        if axis is None:
+            axes = tuple(i for i, size in enumerate(self.shape) if size == 1)
+        elif isinstance(axis, (tuple, list)):
+            axes = tuple(a % self.ndim for a in axis)
+        else:
+            axes = (axis % self.ndim,)
+
+        if any(self.shape[a] != 1 for a in axes):
+            raise ValueError("cannot squeeze a dimension whose size is not one")
+        axes = set(axes)
+        new_shape = tuple(size for i, size in enumerate(self.shape) if i not in axes)
+        return self.compact().reshape(new_shape)
 
     def flip(self, axes: tuple[int, ...]) -> "NDArray":
         """
@@ -652,6 +699,21 @@ def reshape(array: NDArray, new_shape: tuple[int, ...]) -> NDArray:
     return array.reshape(new_shape)
 
 
+def transpose(array: NDArray, axes: tuple[int, ...] | list[int] | None = None) -> NDArray:
+    if axes is None:
+        axes = tuple(reversed(range(array.ndim)))
+    axes = tuple(axis % array.ndim for axis in axes)
+    return array.permute(axes)
+
+
+def swapaxes(array: NDArray, axis1: int, axis2: int) -> NDArray:
+    axes = list(range(array.ndim))
+    axis1 %= array.ndim
+    axis2 %= array.ndim
+    axes[axis1], axes[axis2] = axes[axis2], axes[axis1]
+    return array.permute(tuple(axes))
+
+
 def maximum(a: NDArray, b: NDArray | float) -> NDArray:
     return a.maximum(b)
 
@@ -668,8 +730,68 @@ def tanh(a: NDArray) -> NDArray:
     return a.tanh()
 
 
-def sum(a: NDArray, axis: int | tuple[int] | list[int] | None = None, keepdims: bool = False) -> NDArray:
-    return a.sum(axis=axis, keepdims=keepdims)
+def sum(
+    a: NDArray,
+    axis: int | tuple[int, ...] | list[int] | None = None,
+    keepdims: bool = False,
+    out: NDArray | None = None,
+) -> NDArray:
+    return a.sum(axis=axis, keepdims=keepdims, out=out)
+
+
+def max(
+    a: NDArray,
+    axis: int | tuple[int, ...] | list[int] | None = None,
+    keepdims: bool = False,
+    out: NDArray | None = None,
+) -> NDArray:
+    return a.max(axis=axis, keepdims=keepdims, out=out)
+
+
+def squeeze(
+    a: NDArray,
+    axis: int | tuple[int, ...] | list[int] | None = None,
+) -> NDArray:
+    return a.squeeze(axis=axis)
+
+
+def split(a: NDArray, indices_or_sections: int | tuple[int, ...] | list[int], axis: int = 0) -> tuple[NDArray, ...]:
+    axis %= a.ndim
+    size = a.shape[axis]
+    if isinstance(indices_or_sections, (int, np.integer)):
+        if indices_or_sections <= 0 or size % indices_or_sections != 0:
+            raise ValueError("array split does not result in equal sections")
+        step = size // indices_or_sections
+        boundaries = list(range(0, size, step)) + [size]
+    else:
+        indices = list(indices_or_sections)
+        if any(index < 0 or index > size for index in indices):
+            raise ValueError("split index is out of bounds")
+        boundaries = [0] + indices + [size]
+
+    result = []
+    for start, stop in zip(boundaries[:-1], boundaries[1:]):
+        index = [slice(None)] * a.ndim
+        index[axis] = slice(start, stop)
+        result.append(a[tuple(index)])
+    return tuple(result)
+
+
+def stack(arrays: Iterable[NDArray], axis: int = 0) -> NDArray:
+    arrays = tuple(arrays)
+    if not arrays:
+        raise ValueError("need at least one array to stack")
+    axis %= arrays[0].ndim + 1
+    shape = list(arrays[0].shape)
+    shape.insert(axis, len(arrays))
+    out = empty(tuple(shape), device=arrays[0].device)
+    for i, array in enumerate(arrays):
+        if array.shape != arrays[0].shape:
+            raise ValueError("all arrays must have the same shape")
+        index = [slice(None)] * out.ndim
+        index[axis] = i
+        out[tuple(index)] = array
+    return out
 
 
 def flip(a: NDArray, axes: tuple[int, ...]) -> NDArray:

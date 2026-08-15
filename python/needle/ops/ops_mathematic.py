@@ -366,7 +366,10 @@ class Tanh(TensorOp):
         ### BEGIN YOUR SOLUTION
         tanh_a = node.inputs[0].realize_cached_data()
         tanh_a = array_api.tanh(tanh_a)
-        return multiply(out_grad, 1 - tanh_a ** 2)
+        derivative = Tensor(
+            1 - tanh_a ** 2, device=out_grad.device, requires_grad=False
+        )
+        return multiply(out_grad, derivative)
         ### END YOUR SOLUTION
 
 
@@ -387,10 +390,13 @@ class Stack(TensorOp):
     def compute(self, args: TensorTuple) -> Tensor:
         ### BEGIN YOUR SOLUTION
         shape = list(args[0].shape)
-        shape.insert(self.axis, len(args))
+        axis = self.axis % (len(shape) + 1)
+        shape.insert(axis, len(args))
         stacked = array_api.empty(shape, dtype=args[0].dtype)
         for i, tensor in enumerate(args):
-            stacked[i] = tensor.realize_cached_data()
+            index = [slice(None)] * len(shape)
+            index[axis] = i
+            stacked[tuple(index)] = tensor
         return stacked      
         ### END YOUR SOLUTION
 
@@ -416,7 +422,8 @@ class Split(TensorTupleOp):
 
     def compute(self, A):
         ### BEGIN YOUR SOLUTION
-        return tuple(array_api.split(A, A.shape[self.axis], axis=self.axis))
+        parts = array_api.split(A, A.shape[self.axis], axis=self.axis)
+        return tuple(array_api.squeeze(part, axis=self.axis) for part in parts)
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
@@ -506,5 +513,3 @@ class Conv(TensorOp):
 
 def conv(a, b, stride=1, padding=1):
     return Conv(stride, padding)(a, b)
-
-
