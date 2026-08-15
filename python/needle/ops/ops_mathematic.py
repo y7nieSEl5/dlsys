@@ -153,11 +153,12 @@ class Transpose(TensorOp):
 
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
-        if self.axes is None:
-            axis1, axis2 = -1, -2
+        axes = [i for i in range(len(a.shape))]
+        if self.axes is not None:
+            axes[self.axes[0]], axes[self.axes[1]] = axes[self.axes[1]], axes[self.axes[0]]
         else:
-            axis1, axis2 = self.axes
-        return array_api.swapaxes(a, axis1, axis2)
+            axes[-1], axes[-2] = axes[-2], axes[-1]
+        return array_api.transpose(a, axes=axes)
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
@@ -230,22 +231,31 @@ def broadcast_to(a, shape):
 
 class Summation(TensorOp):
     def __init__(self, axes: Optional[tuple] = None):
+        if (axes is not None) and (not isinstance(axes, tuple)):
+            axes = (axes,)
         self.axes = axes
 
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
-        return a.sum(axis=self.axes)
+        if self.axes is None:
+            return array_api.sum(a)
+        for axis in sorted(self.axes, reverse=True):
+            a = array_api.sum(a, axis=axis)
+        return a
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
+        input_shape = node.inputs[0].shape
         if self.axes is None:
-            return broadcast_to(reshape(out_grad, (1,) * len(node.inputs[0].shape)), node.inputs[0].shape)
+            return broadcast_to(reshape(out_grad, (1,) * len(input_shape)), input_shape)
         else:
-            shape = list(node.inputs[0].shape)
+            # Create a shape with 1s in the summed axes and the original dimensions elsewhere
+            grad_shape = list(input_shape)
             for axis in self.axes:
-                shape[axis] = 1
-            return broadcast_to(reshape(out_grad, shape), node.inputs[0].shape)
+                grad_shape[axis] = 1
+            reshaped_grad = reshape(out_grad, tuple(grad_shape))
+            return broadcast_to(reshaped_grad, input_shape)
         ### END YOUR SOLUTION
 
 
@@ -355,7 +365,8 @@ class Tanh(TensorOp):
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        tanh_a = node.realize_cached_data()
+        tanh_a = node.inputs[0].realize_cached_data()
+        tanh_a = array_api.tanh(tanh_a)
         return multiply(out_grad, 1 - tanh_a ** 2)
         ### END YOUR SOLUTION
 
@@ -376,8 +387,12 @@ class Stack(TensorOp):
 
     def compute(self, args: TensorTuple) -> Tensor:
         ### BEGIN YOUR SOLUTION
-        arrays = [a.realize_cached_data() for a in args]
-        return array_api.stack(arrays, axis=self.axis)
+        shape = list(args[0].shape)
+        shape.insert(self.axis, len(args))
+        stacked = array_api.empty(shape, dtype=args[0].dtype)
+        for i, tensor in enumerate(args):
+            stacked[i] = tensor.realize_cached_data()
+        return stacked      
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
