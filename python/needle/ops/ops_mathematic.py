@@ -392,7 +392,10 @@ class Stack(TensorOp):
         shape = list(args[0].shape)
         axis = self.axis % (len(shape) + 1)
         shape.insert(axis, len(args))
-        stacked = array_api.empty(shape, dtype=args[0].dtype)
+        empty_kwargs = {"dtype": args[0].dtype}
+        if hasattr(args[0], "device"):
+            empty_kwargs["device"] = args[0].device
+        stacked = array_api.empty(shape, **empty_kwargs)
         for i, tensor in enumerate(args):
             index = [slice(None)] * len(shape)
             index[axis] = i

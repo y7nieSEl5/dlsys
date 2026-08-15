@@ -11,7 +11,7 @@ class LogSoftmax(TensorOp):
     def compute(self, Z: NDArray) -> NDArray:
         ### BEGIN YOUR SOLUTION
         Z_max = array_api.max(Z, axis=1, keepdims=True)
-        Z_stable = Z - Z_max
+        Z_stable = Z - array_api.broadcast_to(Z_max, Z.shape)
         logsumexp = array_api.log(array_api.sum(array_api.exp(Z_stable), axis=1, keepdims=True))
         return Z_stable - logsumexp
         ### END YOUR SOLUTION
@@ -21,7 +21,7 @@ class LogSoftmax(TensorOp):
         Z = node.inputs[0] # (N, C)
         Z_data = Z.realize_cached_data() # (N, C)
         Z_max = array_api.max(Z_data, axis=1, keepdims=True) # (N, 1)
-        Z_stable = Z_data - Z_max # (N, C)
+        Z_stable = Z_data - array_api.broadcast_to(Z_max, Z_data.shape) # (N, C)
         logsumexp = array_api.log(array_api.sum(array_api.exp(Z_stable), axis=1, keepdims=True)) # (N, 1)
         softmax = array_api.exp(Z_stable - logsumexp)   # (N, C)
 
@@ -46,7 +46,7 @@ class LogSumExp(TensorOp):
     def compute(self, Z: NDArray) -> NDArray:
         ### BEGIN YOUR SOLUTION
         Z_max = array_api.max(Z, axis=self.axes, keepdims=True)
-        Z_stable = Z - Z_max
+        Z_stable = Z - array_api.broadcast_to(Z_max, Z.shape)
         logsumexp = array_api.log(array_api.sum(array_api.exp(Z_stable), axis=self.axes, keepdims=True))
         return (Z_max + logsumexp).squeeze()
         ### END YOUR SOLUTION
