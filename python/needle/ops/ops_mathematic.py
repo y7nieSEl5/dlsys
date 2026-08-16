@@ -471,11 +471,16 @@ class Dilate(TensorOp):
         ### BEGIN YOUR SOLUTION
         slices = [slice(None)] * a.ndim
         for axis in self.axes:
-            slices[axis] = slice(None, None, self.dilation)
+            slices[axis] = slice(None, None, self.dilation + 1)
         dilated_shape = list(a.shape)
         for axis in self.axes:
-            dilated_shape[axis] = (dilated_shape[axis] - 1) * self.dilation + 1
-        dilated = array_api.zeros(dilated_shape, dtype=a.dtype)
+            dilated_shape[axis] += (dilated_shape[axis] - 1) * self.dilation
+
+        empty_kwargs = {"dtype": a.dtype}
+        if hasattr(a, "device"):
+            empty_kwargs["device"] = a.device
+        dilated = array_api.empty(tuple(dilated_shape), **empty_kwargs)
+        dilated.fill(0)
         dilated[tuple(slices)] = a
         return dilated
         ### END YOUR SOLUTION
@@ -499,7 +504,7 @@ class UnDilate(TensorOp):
         ### BEGIN YOUR SOLUTION
         slices = [slice(None)] * a.ndim
         for axis in self.axes:
-            slices[axis] = slice(None, None, self.dilation)
+            slices[axis] = slice(None, None, self.dilation + 1)
         return a[tuple(slices)]
         ### END YOUR SOLUTION
 
