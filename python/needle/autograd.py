@@ -1,6 +1,5 @@
 """Core data structures."""
 import needle
-from .backend_numpy import Device, cpu, all_devices
 from typing import Dict, List, Optional, NamedTuple, Tuple, Union
 from collections import namedtuple
 import numpy
@@ -17,7 +16,7 @@ TENSOR_COUNTER = 0
 import numpy as array_api
 NDArray = numpy.ndarray
 
-from .backend_selection import array_api, NDArray
+from .backend_selection import Device, NDArray, all_devices, array_api, cpu
 
 class Op:
     """Operator definition."""
