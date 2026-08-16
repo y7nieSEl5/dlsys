@@ -469,12 +469,16 @@ class Dilate(TensorOp):
 
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
+        if self.dilation < 0:
+            raise ValueError("dilation must be non-negative")
+        step = self.dilation + 1
+
         slices = [slice(None)] * a.ndim
         for axis in self.axes:
-            slices[axis] = slice(None, None, self.dilation + 1)
+            slices[axis] = slice(None, None, step)
         dilated_shape = list(a.shape)
         for axis in self.axes:
-            dilated_shape[axis] += (dilated_shape[axis] - 1) * self.dilation
+            dilated_shape[axis] *= step
 
         empty_kwargs = {"dtype": a.dtype}
         if hasattr(a, "device"):
@@ -502,9 +506,13 @@ class UnDilate(TensorOp):
 
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
+        if self.dilation < 0:
+            raise ValueError("dilation must be non-negative")
+        step = self.dilation + 1
+
         slices = [slice(None)] * a.ndim
         for axis in self.axes:
-            slices[axis] = slice(None, None, self.dilation + 1)
+            slices[axis] = slice(None, None, step)
         return a[tuple(slices)]
         ### END YOUR SOLUTION
 
