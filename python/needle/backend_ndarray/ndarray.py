@@ -671,7 +671,10 @@ class NDArray:
         axes = ( (0, 0), (1, 1), (0, 0)) pads the middle axis with a 0 on the left and right side.
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        shape = tuple(s + l + r for s, (l, r) in zip(self.shape, axes))
+        out = empty(shape, dtype=self.dtype, device=self.device)
+        out[tuple(slice(l, s - r) for s, (l, r) in zip(self.shape, axes))] = self
+        return out
         ### END YOUR SOLUTION
 
 def array(a: Any, dtype: str = "float32", device: BackendDevice | None = None) -> NDArray:
