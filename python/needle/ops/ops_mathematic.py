@@ -529,7 +529,10 @@ class Conv(TensorOp):
 
     def compute(self, A, B):
         ### BEGIN YOUR SOLUTION
-        A_padded = A.pad((0, 0), (self.padding, self.padding), (self.padding, self.padding), (0, 0))
+        A_padded = A.pad(
+            ((0, 0), (self.padding, self.padding),
+             (self.padding, self.padding), (0, 0))
+        )
 
         N, H, W, C_in = A_padded.shape
         K_h, K_w, C_in_kernel, C_out = B.shape
@@ -573,7 +576,10 @@ class Conv(TensorOp):
         B_data = B.realize_cached_data()
         out_grad_data = out_grad.realize_cached_data()
 
-        A_padded = A_data.pad((0, 0), (self.padding, self.padding), (self.padding, self.padding), (0, 0))
+        A_padded = A_data.pad(
+            ((0, 0), (self.padding, self.padding),
+             (self.padding, self.padding), (0, 0))
+        )
         
         N, H, W, C_in = A_padded.shape
         K_h, K_w, C_in_kernel, C_out = B_data.shape
