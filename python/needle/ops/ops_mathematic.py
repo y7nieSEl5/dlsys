@@ -449,7 +449,7 @@ class Flip(TensorOp):
             axes = tuple(range(a.ndim))
         else:
             axes = self.axes
-        return array_api.flip(a, axis=axes)
+        return array_api.flip(a, axes=axes)
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
