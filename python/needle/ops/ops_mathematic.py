@@ -445,12 +445,16 @@ class Flip(TensorOp):
 
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        if self.axes is None:
+            axes = tuple(range(a.ndim))
+        else:
+            axes = self.axes
+        return array_api.flip(a, axis=axes)
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return flip(out_grad, axes=self.axes)
         ### END YOUR SOLUTION
 
 
