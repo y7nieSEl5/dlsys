@@ -469,8 +469,6 @@ class Dilate(TensorOp):
 
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
-        if self.dilation < 0:
-            raise ValueError("dilation must be non-negative")
         step = self.dilation + 1
 
         slices = [slice(None)] * a.ndim
@@ -506,8 +504,6 @@ class UnDilate(TensorOp):
 
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
-        if self.dilation < 0:
-            raise ValueError("dilation must be non-negative")
         step = self.dilation + 1
 
         slices = [slice(None)] * a.ndim
@@ -533,12 +529,119 @@ class Conv(TensorOp):
 
     def compute(self, A, B):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        A_padded = A.pad((0, 0), (self.padding, self.padding), (self.padding, self.padding), (0, 0))
+
+        N, H, W, C_in = A_padded.shape
+        K_h, K_w, C_in_kernel, C_out = B.shape
+
+        H_out = (H - K_h) // self.stride + 1
+        W_out = (W - K_w) // self.stride + 1
+        
+        out_kwargs = {"dtype": A_padded.dtype}
+        if hasattr(A_padded, "device"):
+            out_kwargs["device"] = A_padded.device
+        out = array_api.empty((N, H_out, W_out, C_out), **out_kwargs)
+        out.fill(0)
+
+        for i in range(K_h):
+            for j in range(K_w):
+                patch = A_padded[
+                    :,
+                    i:i + H_out * self.stride:self.stride,
+                    j:j + W_out * self.stride:self.stride,
+                    :,
+                ]
+                patch = patch.compact()
+                patch = array_api.reshape(patch, (N * H_out * W_out, C_in))
+
+                kernel = B[i:i + 1, j:j + 1, :, :]
+                kernel = kernel.compact()
+                kernel = array_api.reshape(kernel, (C_in, C_out))
+
+                contribution = patch @ kernel
+                contribution = array_api.reshape(
+                    contribution, (N, H_out, W_out, C_out)
+                )
+                out = out + contribution
+        return out
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        A, B = node.inputs
+        A_data = A.realize_cached_data()
+        B_data = B.realize_cached_data()
+        out_grad_data = out_grad.realize_cached_data()
+
+        A_padded = A_data.pad((0, 0), (self.padding, self.padding), (self.padding, self.padding), (0, 0))
+        
+        N, H, W, C_in = A_padded.shape
+        K_h, K_w, C_in_kernel, C_out = B_data.shape
+
+        H_out = (H - K_h) // self.stride + 1
+        W_out = (W - K_w) // self.stride + 1
+
+        def zeros(shape, reference):
+            kwargs = {"dtype": reference.dtype}
+            if hasattr(reference, "device"):
+                kwargs["device"] = reference.device
+            result = array_api.empty(tuple(shape), **kwargs)
+            result.fill(0)
+            return result
+
+        grad_A_padded = zeros(A_padded.shape, A_padded)
+        grad_B = zeros(B_data.shape, B_data)
+
+        for i in range(K_h):
+            for j in range(K_w):
+                patch_idx = (
+                    slice(None),
+                    slice(i, i + H_out * self.stride, self.stride),
+                    slice(j, j + W_out * self.stride, self.stride),
+                    slice(None),
+                )
+                x_patch = A_padded[patch_idx]
+                dy_patch = out_grad_data
+                x_patch = x_patch.compact()
+                dy_patch = dy_patch.compact()
+                x_patch = array_api.reshape(
+                    x_patch, (N * H_out * W_out, C_in)
+                )
+                dy_patch = array_api.reshape(
+                    dy_patch, (N * H_out * W_out, C_out)
+                )
+
+                kernel = B_data[i:i + 1, j:j + 1, :, :]
+                kernel = kernel.compact()
+                kernel = array_api.reshape(kernel, (C_in, C_out))
+
+                d_kernel = array_api.transpose(x_patch, axes=(1, 0)) @ dy_patch
+                d_kernel = array_api.reshape(d_kernel, (1, 1, C_in, C_out))
+                grad_B[i:i + 1, j:j + 1, :, :] = d_kernel
+
+                d_x_patch = dy_patch @ array_api.transpose(kernel, axes=(1, 0))
+                d_x_patch = array_api.reshape(
+                    d_x_patch, (N, H_out, W_out, C_in)
+                )
+                grad_A_padded[patch_idx] = (
+                    grad_A_padded[patch_idx] + d_x_patch
+                )
+
+        if self.padding > 0:
+            crop = (
+                slice(None),
+                slice(self.padding, self.padding + A.shape[1]),
+                slice(self.padding, self.padding + A.shape[2]),
+                slice(None),
+            )
+            grad_A = grad_A_padded[crop]
+        else:
+            grad_A = grad_A_padded
+
+        return (
+            Tensor(grad_A, device=A.device, requires_grad=False),
+            Tensor(grad_B, device=B.device, requires_grad=False),
+        )
         ### END YOUR SOLUTION
 
 
