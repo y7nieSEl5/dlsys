@@ -671,9 +671,15 @@ class NDArray:
         axes = ( (0, 0), (1, 1), (0, 0)) pads the middle axis with a 0 on the left and right side.
         """
         ### BEGIN YOUR SOLUTION
+        if len(axes) != self.ndim:
+            raise ValueError("padding must specify both sides for every axis")
+        if any(left < 0 or right < 0 for left, right in axes):
+            raise ValueError("padding values must be non-negative")
+
         shape = tuple(s + l + r for s, (l, r) in zip(self.shape, axes))
         out = empty(shape, dtype=self.dtype, device=self.device)
-        out[tuple(slice(l, s - r) for s, (l, r) in zip(self.shape, axes))] = self
+        out.fill(0)
+        out[tuple(slice(l, l + s) for s, (l, r) in zip(self.shape, axes))] = self
         return out
         ### END YOUR SOLUTION
 
