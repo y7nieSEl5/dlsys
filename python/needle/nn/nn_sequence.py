@@ -344,6 +344,8 @@ class LSTMCell(Module):
             )
             gates = gates + bias_ih + bias_hh
 
+        # reshape gates from (bs, 4*hidden_size) to (bs, 4, hidden_size) 
+        gates = ops.reshape(gates, (X.shape[0], 4, self.hidden_size))
         gates = ops.split(gates, axis=1)
         i = self.sigmoid(gates[0])
         f = self.sigmoid(gates[1])
