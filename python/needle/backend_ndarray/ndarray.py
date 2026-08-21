@@ -262,6 +262,16 @@ class NDArray:
         """
 
         ### BEGIN YOUR SOLUTION
+        new_shape = tuple(new_shape)
+        unknown_axes = [i for i, dim in enumerate(new_shape) if dim == -1]
+        
+        if unknown_axes:
+            known_size = prod(dim for dim in new_shape if dim != -1)
+            inferred = self.size // known_size
+            new_shape = tuple(
+                inferred if dim == -1 else dim for dim in new_shape
+            )
+
         if prod(new_shape) != self.size or not self.is_compact():
             raise ValueError
         return NDArray.make(new_shape, device=self.device, handle=self._handle, offset=self._offset)
