@@ -151,24 +151,49 @@ def epoch_general_cifar10(dataloader, model, loss_fn=nn.SoftmaxLoss(), opt=None)
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
+    params = model.parameters()
+    model_device = params[0].device if params else None
+
+    if isinstance(loss_fn, type):
+        loss_fn = loss_fn()
+
+    if opt is None:
+        model.eval()
+    else:
+        model.train()
+
+    total_correct = 0
+    total_loss = 0.0
+    total_examples = 0
+
     for X, y in dataloader:
-        X = ndl.Tensor(X)
-        y_onehot = np.zeros((y.shape[0], model.W2.shape[1]))
-        y_onehot[np.arange(y.size), y] = 1
-        y = ndl.Tensor(y_onehot)
+        if not isinstance(X, ndl.Tensor):
+            X = ndl.Tensor(X, device=model_device)
+        elif model_device is not None and X.device != model_device:
+            X = ndl.Tensor(X, device=model_device)
+
+        if not isinstance(y, ndl.Tensor):
+            y = ndl.Tensor(y, device=model_device, requires_grad=False)
+        elif model_device is not None and y.device != model_device:
+            y = ndl.Tensor(y, device=model_device, requires_grad=False)
 
         if opt is not None:
-            model.train()
             opt.reset_grad()
-            logits = model(X)
-            loss = loss_fn(logits, y)
+        logits = model(X)
+        loss = loss_fn(logits, y)
+
+        labels = y.numpy().astype(np.int64)
+        predictions = np.argmax(logits.numpy(), axis=1)
+        batch_size = labels.shape[0]
+        total_correct += np.sum(predictions == labels)
+        total_loss += float(np.asarray(loss.numpy()).reshape(-1)[0]) * batch_size
+        total_examples += batch_size
+
+        if opt is not None:
             loss.backward()
             opt.step()
-        else:
-            model.eval()
-            with ndl.no_grad():
-                logits = model(X)
-                loss = loss_fn(logits, y)
+
+    return total_correct / total_examples, total_loss / total_examples
     ### END YOUR SOLUTION
 
 
@@ -192,7 +217,22 @@ def train_cifar10(model, dataloader, n_epochs=1, optimizer=ndl.optim.Adam,
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    opt = optimizer(
+        model.parameters(),
+        lr=lr,
+        weight_decay=weight_decay,
+    )
+    loss = loss_fn() if isinstance(loss_fn, type) else loss_fn
+
+    metrics = None
+    for _ in range(n_epochs):
+        metrics = epoch_general_cifar10(
+            dataloader,
+            model,
+            loss_fn=loss,
+            opt=opt,
+        )
+    return metrics
     ### END YOUR SOLUTION
 
 
@@ -211,7 +251,13 @@ def evaluate_cifar10(model, dataloader, loss_fn=nn.SoftmaxLoss):
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    loss = loss_fn() if isinstance(loss_fn, type) else loss_fn
+    return epoch_general_cifar10(
+        dataloader,
+        model,
+        loss_fn=loss,
+        opt=None,
+    )
     ### END YOUR SOLUTION
 
 
