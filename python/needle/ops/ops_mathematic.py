@@ -176,6 +176,8 @@ class Reshape(TensorOp):
 
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
+        if hasattr(a, "compact"):
+            a = a.compact()
         return array_api.reshape(a, self.shape)
         ### END YOUR SOLUTION
 
