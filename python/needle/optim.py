@@ -2,7 +2,7 @@
 import needle as ndl
 import numpy as np
 
-from python.needle import data
+from . import data
 
 
 class Optimizer:
