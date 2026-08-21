@@ -13,7 +13,7 @@ class LogSoftmax(TensorOp):
         Z_max = array_api.max(Z, axis=1, keepdims=True)
         Z_stable = Z - array_api.broadcast_to(Z_max, Z.shape)
         logsumexp = array_api.log(array_api.sum(array_api.exp(Z_stable), axis=1, keepdims=True))
-        return Z_stable - logsumexp
+        return Z_stable - array_api.broadcast_to(logsumexp, Z.shape)
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad: Tensor, node: Tensor):
@@ -23,13 +23,16 @@ class LogSoftmax(TensorOp):
         Z_max = array_api.max(Z_data, axis=1, keepdims=True) # (N, 1)
         Z_stable = Z_data - array_api.broadcast_to(Z_max, Z_data.shape) # (N, C)
         logsumexp = array_api.log(array_api.sum(array_api.exp(Z_stable), axis=1, keepdims=True)) # (N, 1)
-        softmax = array_api.exp(Z_stable - logsumexp)   # (N, C)
+        softmax = array_api.exp(
+            Z_stable - array_api.broadcast_to(logsumexp, Z_data.shape)
+        )   # (N, C)
 
         sum_grad = summation(out_grad, axes=(1,)) # (1, C) -> (N,)
 
         sum_grad = sum_grad.reshape((-1, 1)) # (N, 1)
 
-        return out_grad - multiply(sum_grad, Tensor(softmax)) # (N, C) - (N, 1) * (N, C)
+        sum_grad = broadcast_to(sum_grad, out_grad.shape)
+        return out_grad - multiply(sum_grad, Tensor(softmax)) # (N, C) - (N, C)
         ### END YOUR SOLUTION
 
 
