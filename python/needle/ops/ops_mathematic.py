@@ -75,12 +75,13 @@ class EWisePow(TensorOp):
 
     def compute(self, a: NDArray, b: NDArray) -> NDArray:
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return a ** b
         ### END YOUR SOLUTION
-
+        
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        lhs, rhs = node.inputs
+        return multiply(out_grad, multiply(rhs, power(lhs, add_scalar(rhs, - 1)))), multiply(out_grad, multiply(log(lhs), power(lhs, rhs)))
         ### END YOUR SOLUTION
 
 
