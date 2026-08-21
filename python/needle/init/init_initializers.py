@@ -16,7 +16,13 @@ def xavier_normal(fan_in: int, fan_out: int, gain: float = 1.0, **kwargs: Any) -
     return randn(fan_in, fan_out, mean = 0.0, std = std, **kwargs)
     ### END YOUR SOLUTION
 
-def kaiming_uniform(fan_in: int, fan_out: int, nonlinearity: str = "relu", **kwargs: Any, shape: tuple) -> "Tensor":
+def kaiming_uniform(
+    fan_in: int,
+    fan_out: int,
+    nonlinearity: str = "relu",
+    shape: tuple | None = None,
+    **kwargs: Any,
+) -> "Tensor":
     assert nonlinearity == "relu", "Only relu supported currently"
     ### BEGIN YOUR SOLUTION
     if shape is not None:
