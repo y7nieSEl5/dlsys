@@ -25,13 +25,11 @@ def kaiming_uniform(
 ) -> "Tensor":
     assert nonlinearity == "relu", "Only relu supported currently"
     ### BEGIN YOUR SOLUTION
-    if shape is not None:
-        fan_in = shape[0]
-        fan_out = shape[1]
     if nonlinearity == "relu":
         gain = math.sqrt(2.0)
     bound = gain * math.sqrt(3.0 / fan_in)
-    return rand(fan_in, fan_out, low = -bound, high = bound, **kwargs)
+    init_shape = shape if shape is not None else (fan_in, fan_out)
+    return rand(*init_shape, low=-bound, high=bound, **kwargs)
     ### END YOUR SOLUTION
 
 
