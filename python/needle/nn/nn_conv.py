@@ -22,30 +22,27 @@ class Conv(Module):
             kernel_size = kernel_size[0]
         if isinstance(stride, tuple):
             stride = stride[0]
-        if kernel_size <= 0 or stride <= 0:
-            raise ValueError("kernel_size and stride must be positive")
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = kernel_size
         self.stride = stride
 
         ### BEGIN YOUR SOLUTION
-        # The primitive convolution stores kernels as (K, K, Cin, Cout),
-        # matching its NHWC input convention.  Initialize with the same
-        # uniform bound used by torch's Conv2d for a comparable scale.
-        bound = 1 / np.sqrt(in_channels * kernel_size * kernel_size)
+        # The primitive convolution stores kernels as (K, K, Cin, Cout).
+        fan_in = in_channels * kernel_size * kernel_size
+        fan_out = out_channels * kernel_size * kernel_size
+        weight_shape = (kernel_size, kernel_size, in_channels, out_channels)
         self.weight = Parameter(
-            init.rand(
-                kernel_size,
-                kernel_size,
-                in_channels,
-                out_channels,
-                low=-bound,
-                high=bound,
+            init.kaiming_uniform(
+                fan_in,
+                fan_out,
+                shape=weight_shape,
                 device=device,
                 dtype=dtype,
             )
         )
+
+        bound = 1 / np.sqrt(fan_in)
         self.bias = (
             Parameter(
                 init.rand(
@@ -63,8 +60,7 @@ class Conv(Module):
 
     def forward(self, x: Tensor) -> Tensor:
         ### BEGIN YOUR SOLUTION
-        # Convert NCHW -> NHWC for ops.conv.  Tensor.transpose swaps two
-        # axes at a time, so two swaps are needed for a full permutation.
+        # Convert NCHW -> NHWC for ops.conv.
         x_nhwc = x.transpose((1, 2)).transpose((2, 3))
         out = ops.conv(
             x_nhwc,
@@ -76,6 +72,6 @@ class Conv(Module):
             bias = ops.reshape(self.bias, (1, 1, 1, self.out_channels))
             out = out + ops.broadcast_to(bias, out.shape)
 
-        # Convert NHWC -> NCHW before returning to the module API.
+        # Convert NHWC -> NCHW
         return out.transpose((1, 3)).transpose((2, 3))
         ### END YOUR SOLUTION

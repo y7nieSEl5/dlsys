@@ -37,7 +37,24 @@ def parse_mnist(image_filename, label_filename):
                 for MNIST will contain the values 0-9.
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    with gzip.open(image_filename, "rb") as f:
+        image_header = f.read(16)
+        magic, num_images, num_rows, num_cols = struct.unpack(">IIII", image_header)
+        image_data = f.read(num_images * num_rows * num_cols)
+        
+        X = np.frombuffer(image_data, dtype=np.uint8).reshape(
+            num_images, num_rows * num_cols
+        )
+        X = X.astype(np.float32) / 255.0
+
+    with gzip.open(label_filename, "rb") as f:
+        label_header = f.read(8)
+        magic, num_labels = struct.unpack(">II", label_header)
+
+        label_data = f.read(num_labels)
+        y = np.frombuffer(label_data, dtype=np.uint8)
+
+    return X, y
     ### END YOUR SOLUTION
 
 
@@ -58,7 +75,7 @@ def softmax_loss(Z, y_one_hot):
         Average softmax loss over the sample. (ndl.Tensor[np.float32])
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    return ndl.ops.summation(ndl.ops.log(ndl.ops.summation(ndl.ops.exp(Z), axes=(-1,))) - ndl.ops.summation(ndl.ops.multiply(Z, y_one_hot), axes=(-1,))) / Z.shape[0]
     ### END YOUR SOLUTION
 
 
@@ -87,7 +104,31 @@ def nn_epoch(X, y, W1, W2, lr=0.1, batch=100):
     """
 
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    num_examples = X.shape[0]
+    num_classes = W2.shape[1]
+    for start in range(0, num_examples, batch):
+        end = min(start + batch, num_examples)
+        batch_size = end - start
+
+        y_onehot = np.zeros((batch_size, num_classes))
+        y_onehot[np.arange(batch_size), y[start:end]] = 1
+
+        X_batch = ndl.Tensor(X[start:end])
+        y_batch = ndl.Tensor(y_onehot)
+
+        Z1 = ndl.ops.matmul(X_batch, W1)
+        Z2 = ndl.ops.matmul(ndl.ops.relu(Z1), W2)
+
+        loss = softmax_loss(Z2, y_batch)
+        loss.backward()
+
+        W1.data -= lr * W1.grad.data
+        W2.data -= lr * W2.grad.data
+
+        W1.grad = None
+        W2.grad = None
+
+    return W1, W2
     ### END YOUR SOLUTION
 
 ### CIFAR-10 training ###
@@ -110,7 +151,24 @@ def epoch_general_cifar10(dataloader, model, loss_fn=nn.SoftmaxLoss(), opt=None)
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    for X, y in dataloader:
+        X = ndl.Tensor(X)
+        y_onehot = np.zeros((y.shape[0], model.W2.shape[1]))
+        y_onehot[np.arange(y.size), y] = 1
+        y = ndl.Tensor(y_onehot)
+
+        if opt is not None:
+            model.train()
+            opt.reset_grad()
+            logits = model(X)
+            loss = loss_fn(logits, y)
+            loss.backward()
+            opt.step()
+        else:
+            model.eval()
+            with ndl.no_grad():
+                logits = model(X)
+                loss = loss_fn(logits, y)
     ### END YOUR SOLUTION
 
 

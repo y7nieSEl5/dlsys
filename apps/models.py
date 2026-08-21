@@ -11,12 +11,50 @@ class ResNet9(ndl.nn.Module):
     def __init__(self, device=None, dtype="float32"):
         super().__init__()
         ### BEGIN YOUR SOLUTION ###
-        raise NotImplementedError() ###
+        device = device or ndl.cpu()
+        dtype = dtype or "float32"
+
+        def conv_bn(c_in, c_out, kernel_size, stride):
+            return nn.Sequential(
+                nn.Conv(
+                    c_in,
+                    c_out,
+                    kernel_size,
+                    stride,
+                    device=device,
+                    dtype=dtype,
+                ),
+                nn.BatchNorm2d(c_out, device=device, dtype=dtype),
+                nn.ReLU(),
+            )
+
+        self.net = nn.Sequential(
+            conv_bn(3, 16, 7, 4),
+            conv_bn(16, 32, 3, 2),
+            nn.Residual(
+                nn.Sequential(
+                    conv_bn(32, 32, 3, 1),
+                    conv_bn(32, 32, 3, 1),
+                )
+            ),
+            conv_bn(32, 64, 3, 2),
+            conv_bn(64, 128, 3, 2),
+            nn.Residual(
+                nn.Sequential(
+                    conv_bn(128, 128, 3, 1),
+                    conv_bn(128, 128, 3, 1),
+                )
+            ),
+            nn.Flatten(),
+            nn.Linear(128, 128, device=device, dtype=dtype),
+            nn.ReLU(),
+            nn.Linear(128, 10, device=device, dtype=dtype),
+        )
         ### END YOUR SOLUTION
 
     def forward(self, x):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return self.net(x)
         ### END YOUR SOLUTION
 
 
@@ -58,7 +96,7 @@ class LanguageModel(nn.Module):
 
 if __name__ == "__main__":
     model = ResNet9()
-    x = ndl.ops.randu((1, 32, 32, 3), requires_grad=True)
+    x = ndl.ops.randu((1, 3, 32, 32), requires_grad=True)
     model(x)
     cifar10_train_dataset = ndl.data.CIFAR10Dataset("data/cifar-10-batches-py", train=True)
     train_loader = ndl.data.DataLoader(cifar10_train_dataset, 128, ndl.cpu(), dtype="float32")

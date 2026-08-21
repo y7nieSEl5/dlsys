@@ -2,6 +2,8 @@
 import needle as ndl
 import numpy as np
 
+from python.needle import data
+
 
 class Optimizer:
     def __init__(self, params):
@@ -25,7 +27,14 @@ class SGD(Optimizer):
 
     def step(self):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        for p in self.params:
+            if p.grad is None:
+                continue
+            if p not in self.u:
+                self.u[p] = ndl.init.zeros(*p.shape)
+            grad_eff = p.grad + self.weight_decay * p.data
+            self.u[p] = self.momentum * self.u[p] + (1 - self.momentum) * grad_eff
+            p.data -= self.lr * self.u[p]
         ### END YOUR SOLUTION
 
     def clip_grad_norm(self, max_norm=0.25):
@@ -61,5 +70,26 @@ class Adam(Optimizer):
 
     def step(self):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        self.t += 1
+        for p in self.params:
+            if p.grad is None:
+                continue
+            if p not in self.m:
+                self.m[p] = ndl.init.zeros(*p.shape)
+                self.v[p] = ndl.init.zeros(*p.shape)
+
+            grad = p.grad.detach()
+            data = p.data.detach()
+
+            if self.weight_decay != 0:
+                grad = grad + self.weight_decay * data
+
+            self.m[p].data = self.beta1 * self.m[p].data + (1 - self.beta1) * grad.data
+            self.v[p].data = self.beta2 * self.v[p].data + (1 - self.beta2) * (grad.data ** 2)
+
+            m_hat = self.m[p].data / (1 - self.beta1 ** self.t)
+            v_hat = self.v[p].data / (1 - self.beta2 ** self.t)
+
+            new_data = data - self.lr * m_hat / (ndl.ops.power_scalar(v_hat, 0.5) + self.eps)
+            p.data = new_data
         ### END YOUR SOLUTION
