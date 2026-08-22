@@ -190,8 +190,11 @@ class BatchNorm1d(Module):
             x_hat = (x - mean_broadcasted) / ops.power_scalar(var_broadcasted + self.eps, 0.5) # (N, D)
             out = ops.broadcast_to(ops.reshape(self.weight, (1, -1)), x.shape) * x_hat + ops.broadcast_to(ops.reshape(self.bias, (1, -1)), x.shape) # (N, D)
 
-            self.running_mean.data = self.momentum * mean + (1 - self.momentum) * self.running_mean.data
-            self.running_var.data = self.momentum * var + (1 - self.momentum) * self.running_var.data
+            # DETACH
+            mean_data = mean.detach()
+            var_data = var.detach()
+            self.running_mean.data = self.momentum * mean_data + (1 - self.momentum) * self.running_mean.data
+            self.running_var.data = self.momentum * var_data + (1 - self.momentum) * self.running_var.data
         else:
             running_mean_broadcasted = ops.broadcast_to(ops.reshape(self.running_mean, (1, -1)), x.shape) # (N, D)
             running_var_broadcasted = ops.broadcast_to(ops.reshape(self.running_var, (1, -1)), x.shape) # (N, D)

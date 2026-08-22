@@ -36,9 +36,18 @@ class SGD(Optimizer):
                     device=p.device,
                     dtype=p.dtype,
                 )
-            grad_eff = p.grad + self.weight_decay * p.data
-            self.u[p] = self.momentum * self.u[p] + (1 - self.momentum) * grad_eff
-            p.data -= self.lr * self.u[p]
+
+            # optimizer state should detach the graph
+            grad = p.grad.detach()
+            data = p.data
+            if self.weight_decay != 0:
+                grad = grad + self.weight_decay * data
+
+            self.u[p].data = (
+                self.momentum * self.u[p].data
+                + (1 - self.momentum) * grad
+            )
+            p.data = data - self.lr * self.u[p].data
         ### END YOUR SOLUTION
 
     def clip_grad_norm(self, max_norm=0.25):
