@@ -279,6 +279,9 @@ class Tensor(Value):
     def dtype(self):
         return self.realize_cached_data().dtype
 
+    def __len__(self):
+        return self.shape[0]
+
     @property
     def device(self):
         data = self.realize_cached_data()
