@@ -112,5 +112,11 @@ if __name__ == "__main__":
     x = ndl.ops.randu((1, 3, 32, 32), requires_grad=True)
     model(x)
     cifar10_train_dataset = ndl.data.CIFAR10Dataset("data/cifar-10-batches-py", train=True)
-    train_loader = ndl.data.DataLoader(cifar10_train_dataset, 128, ndl.cpu(), dtype="float32")
+    train_loader = ndl.data.DataLoader(
+        cifar10_train_dataset,
+        batch_size=128,
+        shuffle=True,
+        device=ndl.cpu(),
+        dtype="float32",
+    )
     print(cifar10_train_dataset[1][0].shape)

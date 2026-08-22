@@ -49,11 +49,15 @@ class DataLoader:
         dataset: Dataset,
         batch_size: Optional[int] = 1,
         shuffle: bool = False,
+        device=None,
+        dtype=None,
     ):
 
         self.dataset = dataset
         self.shuffle = shuffle
         self.batch_size = batch_size
+        self.device = device
+        self.dtype = dtype
         if not self.shuffle:
             self.ordering = np.array_split(np.arange(len(dataset)), 
                                            range(batch_size, len(dataset), batch_size))
@@ -74,6 +78,8 @@ class DataLoader:
             raise StopIteration
         batch_indices = self.ordering[self.current_batch]
         self.current_batch += 1
-        return tuple(Tensor(array) for array in self.dataset[batch_indices])
+        return tuple(
+            Tensor(array, device=self.device, dtype=self.dtype)
+            for array in self.dataset[batch_indices]
+        )
         ### END YOUR SOLUTION
-

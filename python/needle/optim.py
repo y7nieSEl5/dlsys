@@ -31,7 +31,11 @@ class SGD(Optimizer):
             if p.grad is None:
                 continue
             if p not in self.u:
-                self.u[p] = ndl.init.zeros(*p.shape)
+                self.u[p] = ndl.init.zeros(
+                    *p.shape,
+                    device=p.device,
+                    dtype=p.dtype,
+                )
             grad_eff = p.grad + self.weight_decay * p.data
             self.u[p] = self.momentum * self.u[p] + (1 - self.momentum) * grad_eff
             p.data -= self.lr * self.u[p]
@@ -75,8 +79,16 @@ class Adam(Optimizer):
             if p.grad is None:
                 continue
             if p not in self.m:
-                self.m[p] = ndl.init.zeros(*p.shape)
-                self.v[p] = ndl.init.zeros(*p.shape)
+                self.m[p] = ndl.init.zeros(
+                    *p.shape,
+                    device=p.device,
+                    dtype=p.dtype,
+                )
+                self.v[p] = ndl.init.zeros(
+                    *p.shape,
+                    device=p.device,
+                    dtype=p.dtype,
+                )
 
             grad = p.grad.detach()
             data = p.data.detach()

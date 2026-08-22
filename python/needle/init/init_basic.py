@@ -53,6 +53,7 @@ def one_hot(n, i, device=None, dtype="float32", requires_grad=False):
     return ndl.Tensor(
         device.one_hot(n, i.numpy().astype("int32"), dtype=dtype),
         device=device,
+        dtype=dtype,
         requires_grad=requires_grad,
     )
 

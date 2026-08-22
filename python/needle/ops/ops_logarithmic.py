@@ -32,7 +32,13 @@ class LogSoftmax(TensorOp):
         sum_grad = sum_grad.reshape((-1, 1)) # (N, 1)
 
         sum_grad = broadcast_to(sum_grad, out_grad.shape)
-        return out_grad - multiply(sum_grad, Tensor(softmax)) # (N, C) - (N, C)
+        softmax = Tensor(
+            softmax,
+            device=out_grad.device,
+            dtype=out_grad.dtype,
+            requires_grad=False,
+        )
+        return out_grad - multiply(sum_grad, softmax) # (N, C) - (N, C)
         ### END YOUR SOLUTION
 
 
@@ -60,7 +66,12 @@ class LogSumExp(TensorOp):
         max_Z = array_api.max(Z, axis=self.axes, keepdims=True) # (N, 1)
         exp = array_api.exp(Z - array_api.broadcast_to(max_Z, Z.shape)) # (N, C)
         sum_exp = array_api.sum(exp, axis=self.axes, keepdims=True) # (N, 1)
-        softmax = Tensor(exp / array_api.broadcast_to(sum_exp, exp.shape)) # (N, C)
+        softmax = Tensor(
+            exp / array_api.broadcast_to(sum_exp, exp.shape),
+            device=out_grad.device,
+            dtype=out_grad.dtype,
+            requires_grad=False,
+        ) # (N, C)
 
         if self.axes is not None:
             shape = list(Z.shape)

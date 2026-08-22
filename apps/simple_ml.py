@@ -113,8 +113,16 @@ def nn_epoch(X, y, W1, W2, lr=0.1, batch=100):
         y_onehot = np.zeros((batch_size, num_classes))
         y_onehot[np.arange(batch_size), y[start:end]] = 1
 
-        X_batch = ndl.Tensor(X[start:end])
-        y_batch = ndl.Tensor(y_onehot)
+        X_batch = ndl.Tensor(
+            X[start:end],
+            device=W1.device,
+            dtype=W1.dtype,
+        )
+        y_batch = ndl.Tensor(
+            y_onehot,
+            device=W1.device,
+            dtype=W1.dtype,
+        )
 
         Z1 = ndl.ops.matmul(X_batch, W1)
         Z2 = ndl.ops.matmul(ndl.ops.relu(Z1), W2)
@@ -153,6 +161,7 @@ def epoch_general_cifar10(dataloader, model, loss_fn=nn.SoftmaxLoss(), opt=None)
     ### BEGIN YOUR SOLUTION
     params = model.parameters()
     model_device = params[0].device if params else None
+    model_dtype = params[0].dtype if params else None
 
     if isinstance(loss_fn, type):
         loss_fn = loss_fn()
@@ -168,14 +177,30 @@ def epoch_general_cifar10(dataloader, model, loss_fn=nn.SoftmaxLoss(), opt=None)
 
     for X, y in dataloader:
         if not isinstance(X, ndl.Tensor):
-            X = ndl.Tensor(X, device=model_device)
-        elif model_device is not None and X.device != model_device:
-            X = ndl.Tensor(X, device=model_device)
+            X = ndl.Tensor(X, device=model_device, dtype=model_dtype)
+        elif (
+            (model_device is not None and X.device != model_device)
+            or (model_dtype is not None and X.dtype != model_dtype)
+        ):
+            X = ndl.Tensor(X, device=model_device, dtype=model_dtype)
 
         if not isinstance(y, ndl.Tensor):
-            y = ndl.Tensor(y, device=model_device, requires_grad=False)
-        elif model_device is not None and y.device != model_device:
-            y = ndl.Tensor(y, device=model_device, requires_grad=False)
+            y = ndl.Tensor(
+                y,
+                device=model_device,
+                dtype=model_dtype,
+                requires_grad=False,
+            )
+        elif (
+            (model_device is not None and y.device != model_device)
+            or (model_dtype is not None and y.dtype != model_dtype)
+        ):
+            y = ndl.Tensor(
+                y,
+                device=model_device,
+                dtype=model_dtype,
+                requires_grad=False,
+            )
 
         if opt is not None:
             opt.reset_grad()
@@ -286,6 +311,9 @@ def epoch_general_ptb(data, model, seq_len=40, loss_fn=nn.SoftmaxLoss(), opt=Non
     ### BEGIN YOUR SOLUTION
     params = model.parameters()
     model_device = params[0].device if params else None
+    model_dtype = params[0].dtype if params else None
+    target_device = model_device if device is None else device
+    target_dtype = model_dtype if dtype is None else dtype
 
     if isinstance(loss_fn, type):
         loss_fn = loss_fn()
@@ -299,7 +327,13 @@ def epoch_general_ptb(data, model, seq_len=40, loss_fn=nn.SoftmaxLoss(), opt=Non
     total_examples = 0
 
     for i in range(0, data.shape[0] - 1, seq_len):
-        X, y = ndl.data.get_batch(data, i, seq_len, device=device, dtype=dtype)
+        X, y = ndl.data.get_batch(
+            data,
+            i,
+            seq_len,
+            device=target_device,
+            dtype=target_dtype,
+        )
 
         if opt is not None:
             opt.reset_grad()
@@ -405,5 +439,5 @@ def loss_err(h, y):
     """Helper function to compute both loss and error"""
     y_one_hot = np.zeros((y.shape[0], h.shape[-1]))
     y_one_hot[np.arange(y.size), y] = 1
-    y_ = ndl.Tensor(y_one_hot)
+    y_ = ndl.Tensor(y_one_hot, device=h.device, dtype=h.dtype)
     return softmax_loss(h, y_).numpy(), np.mean(h.numpy().argmax(axis=1) != y)

@@ -351,7 +351,15 @@ class ReLU(TensorOp):
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
         mask = node.inputs[0].realize_cached_data() > 0
-        return multiply(out_grad, Tensor(mask))
+        return multiply(
+            out_grad,
+            Tensor(
+                mask,
+                device=out_grad.device,
+                dtype=out_grad.dtype,
+                requires_grad=False,
+            ),
+        )
         ### END YOUR SOLUTION
 
 
@@ -370,7 +378,10 @@ class Tanh(TensorOp):
         tanh_a = node.inputs[0].realize_cached_data()
         tanh_a = array_api.tanh(tanh_a)
         derivative = Tensor(
-            1 - tanh_a ** 2, device=out_grad.device, requires_grad=False
+            1 - tanh_a ** 2,
+            device=out_grad.device,
+            dtype=out_grad.dtype,
+            requires_grad=False,
         )
         return multiply(out_grad, derivative)
         ### END YOUR SOLUTION
@@ -648,8 +659,18 @@ class Conv(TensorOp):
             grad_A = grad_A_padded
 
         return (
-            Tensor(grad_A, device=A.device, requires_grad=False),
-            Tensor(grad_B, device=B.device, requires_grad=False),
+            Tensor(
+                grad_A,
+                device=A.device,
+                dtype=A.dtype,
+                requires_grad=False,
+            ),
+            Tensor(
+                grad_B,
+                device=B.device,
+                dtype=B.dtype,
+                requires_grad=False,
+            ),
         )
         ### END YOUR SOLUTION
 
