@@ -284,7 +284,42 @@ def epoch_general_ptb(data, model, seq_len=40, loss_fn=nn.SoftmaxLoss(), opt=Non
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    params = model.parameters()
+    model_device = params[0].device if params else None
+
+    if isinstance(loss_fn, type):
+        loss_fn = loss_fn()
+    if opt is None:
+        model.eval()
+    else:
+        model.train()
+
+    total_correct = 0
+    total_loss = 0.0
+    total_examples = 0
+
+    for i in range(0, data.shape[0] - 1, seq_len):
+        X, y = get_batch(data, i, seq_len, device=device, dtype=dtype)
+
+        if opt is not None:
+            opt.reset_grad()
+        logits, _ = model(X)
+        loss = loss_fn(logits, y)
+
+        labels = y.numpy().astype(np.int64)
+        predictions = np.argmax(logits.numpy(), axis=1)
+        batch_size = labels.shape[0]
+        total_correct += np.sum(predictions == labels)
+        total_loss += float(np.asarray(loss.numpy()).reshape(-1)[0]) * batch_size
+        total_examples += batch_size
+
+        if opt is not None:
+            loss.backward()
+            if clip is not None:
+                nn.utils.clip_grad_norm_(params, clip)
+            opt.step()
+
+    return total_correct / total_examples, total_loss / total_examples
     ### END YOUR SOLUTION
 
 
@@ -311,7 +346,26 @@ def train_ptb(model, data, seq_len=40, n_epochs=1, optimizer=ndl.optim.SGD,
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    opt = optimizer(
+        model.parameters(),
+        lr=lr,
+        weight_decay=weight_decay,
+    )
+    loss = loss_fn() if isinstance(loss_fn, type) else loss_fn
+
+    metrics = None
+    for _ in range(n_epochs):
+        metrics = epoch_general_ptb(
+            data,
+            model,
+            seq_len=seq_len,
+            loss_fn=loss,
+            opt=opt,
+            clip=clip,
+            device=device,
+            dtype=dtype,
+        )
+    return metrics
     ### END YOUR SOLUTION
 
 def evaluate_ptb(model, data, seq_len=40, loss_fn=nn.SoftmaxLoss,
@@ -331,7 +385,17 @@ def evaluate_ptb(model, data, seq_len=40, loss_fn=nn.SoftmaxLoss,
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    loss = loss_fn() if isinstance(loss_fn, type) else loss_fn
+    return epoch_general_ptb(
+        data,
+        model,
+        seq_len=seq_len,
+        loss_fn=loss,
+        opt=None,
+        clip=None,
+        device=device,
+        dtype=dtype,
+    )
     ### END YOUR SOLUTION
 
 ### CODE BELOW IS FOR ILLUSTRATION, YOU DO NOT NEED TO EDIT
