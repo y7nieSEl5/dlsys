@@ -206,19 +206,18 @@ class RNN(Module):
                 dtype=X.dtype,
             )
         h_n = []
-        output = X
+        time_steps = ops.split(X, axis=0)
         h0_layers = ops.split(h0, axis=0)
         for layer in range(self.num_layers):
             h = h0_layers[layer]
             layer_output = []
-            time_steps = ops.split(output, axis=0)
             for t in range(seq_len):
                 h = self.rnn_cells[layer](time_steps[t], h)
                 layer_output.append(h)
-            output = ops.stack(layer_output, axis=0)
+            time_steps = layer_output
             h_n.append(h)
         h_n = ops.stack(h_n, axis=0)
-        return output, h_n
+        return ops.stack(time_steps, axis=0), h_n
         ### END YOUR SOLUTION
 
 
@@ -442,7 +441,7 @@ class LSTM(Module):
 
         h0_layers = ops.split(h0, axis=0)
         c0_layers = ops.split(c0, axis=0)
-        output = X
+        time_steps = ops.split(X, axis=0)
         h_n = []
         c_n = []
 
@@ -450,15 +449,17 @@ class LSTM(Module):
             h = h0_layers[layer]
             c = c0_layers[layer]
             layer_output = []
-            time_steps = ops.split(output, axis=0)
             for t in range(seq_len):
                 h, c = self.lstm_cells[layer](time_steps[t], (h, c))
                 layer_output.append(h)
-            output = ops.stack(layer_output, axis=0)
+            time_steps = layer_output
             h_n.append(h)
             c_n.append(c)
 
-        return output, (ops.stack(h_n, axis=0), ops.stack(c_n, axis=0))
+        return ops.stack(time_steps, axis=0), (
+            ops.stack(h_n, axis=0),
+            ops.stack(c_n, axis=0),
+        )
         ### END YOUR SOLUTION
 
 class Embedding(Module):
