@@ -96,10 +96,14 @@ class LanguageModel(nn.Module):
             else h is tuple of (h0, c0), each of shape (num_layers, bs, hidden_size)
         """
         ### BEGIN YOUR SOLUTION
-        x = self.embedding(x)
-        h = self.seq_model(x, h)
-        out = self.linear(h)
-        return out, h
+        embedded = self.embedding(x)
+        sequence_output, final_hidden = self.seq_model(embedded, h)
+        sequence_output = ndl.ops.reshape(
+            sequence_output,
+            (sequence_output.shape[0] * sequence_output.shape[1], sequence_output.shape[2]),
+        )
+        out = self.linear(sequence_output)
+        return out, final_hidden
         ### END YOUR SOLUTION
 
 
