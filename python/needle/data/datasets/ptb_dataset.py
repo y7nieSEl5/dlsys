@@ -125,8 +125,6 @@ def get_batch(batches, i, bptt, device=None, dtype=None):
 
     batches_data = batches.realize_cached_data()
     data = batches_data[i:i + seq_len, :]
-    target = batches_data[i + 1:i + 1 + seq_len, :].reshape((-1,))
-    return Tensor(data, device=target_device, dtype=target_dtype), Tensor(
-        target, device=target_device, dtype=target_dtype
-    )
+    target = batches_data[i + 1:i + 1 + seq_len, :].compact().reshape((-1,))
+    return Tensor(data, device=target_device, dtype=target_dtype), Tensor(target, device=target_device, dtype=target_dtype)
     ### END YOUR SOLUTION
