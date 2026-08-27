@@ -215,9 +215,17 @@ class AttentionLayer(Module):
         result = None
 
         ### BEGIN YOUR SOLUTION
-        q_prime = self.q_projection(self.prenorm_q(q))
-        k_prime = self.k_projection(self.prenorm_k(k))
-        v_prime = self.v_projection(self.prenorm_v(v))
+        q_norm = self.prenorm_q(q.reshape((batch_size * queries_len, q_dim)))
+        k_norm = self.prenorm_k(k.reshape((batch_size * keys_values_len, k_dim)))
+        v_norm = self.prenorm_v(v.reshape((batch_size * keys_values_len, v_dim)))
+
+        q_prime = self.q_projection(q_norm).reshape(
+            (batch_size, queries_len, self.num_head * self.dim_head))
+        k_prime = self.k_projection(k_norm).reshape(
+            (batch_size, keys_values_len, self.num_head * self.dim_head))
+        v_prime = self.v_projection(v_norm).reshape(
+            (batch_size, keys_values_len, self.num_head * self.dim_head))
+        # LayerNorm1d expects (N, D): (B, T, D) -> (B*T, D)
 
         q_prime = q_prime.reshape((batch_size, queries_len, self.num_head, self.dim_head))
         k_prime = k_prime.reshape((batch_size, keys_values_len, self.num_head, self.dim_head))
