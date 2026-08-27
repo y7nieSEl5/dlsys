@@ -25,7 +25,10 @@ class Dictionary(object):
         Returns the word's unique ID.
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        if word not in self.word2idx:
+            self.idx2word.append(word)
+            self.word2idx[word] = len(self.idx2word) - 1
+        return self.word2idx[word]
         ### END YOUR SOLUTION
 
     def __len__(self):
@@ -33,7 +36,7 @@ class Dictionary(object):
         Returns the number of unique words in the dictionary.
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return len(self.idx2word)
         ### END YOUR SOLUTION
 
 
@@ -60,7 +63,15 @@ class Corpus(object):
         ids: List of ids
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        ids = []
+        with open(path, 'r') as f:
+            for i, line in enumerate(f):
+                if max_lines is not None and i >= max_lines:
+                    break
+                words = line.strip().split() + ['<eos>']
+                for word in words:
+                    ids.append(self.dictionary.add_word(word))
+        return ids
         ### END YOUR SOLUTION
 
 
@@ -81,7 +92,10 @@ def batchify(data, batch_size, device, dtype):
     Returns the data as a numpy array of shape (nbatch, batch_size).
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    nbatch = len(data) // batch_size
+    data = data[:nbatch * batch_size]
+    data = np.array(data, dtype=dtype).reshape((batch_size, nbatch)).transpose()
+    return Tensor(data, device=device, dtype=dtype)
     ### END YOUR SOLUTION
 
 
@@ -105,5 +119,12 @@ def get_batch(batches, i, bptt, device=None, dtype=None):
     target - Tensor of shape (bptt*bs,) with cached data as NDArray
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    seq_len = min(bptt, len(batches) - 1 - i)
+    target_device = batches.device if device is None else device
+    target_dtype = batches.dtype if dtype is None else dtype
+
+    batches_data = batches.realize_cached_data()
+    data = batches_data[i:i + seq_len, :]
+    target = batches_data[i + 1:i + 1 + seq_len, :].compact().reshape((-1,))
+    return Tensor(data, device=target_device, dtype=target_dtype), Tensor(target, device=target_device, dtype=target_dtype)
     ### END YOUR SOLUTION
