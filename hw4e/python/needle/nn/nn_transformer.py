@@ -231,12 +231,12 @@ class AttentionLayer(Module):
         k_prime = k_prime.reshape((batch_size, keys_values_len, self.num_head, self.dim_head))
         v_prime = v_prime.reshape((batch_size, keys_values_len, self.num_head, self.dim_head))
 
-        q_prime = ops.transpose(q_prime, axes=(0, 2, 1, 3))
-        k_prime = ops.transpose(k_prime, axes=(0, 2, 1, 3))
-        v_prime = ops.transpose(v_prime, axes=(0, 2, 1, 3))
+        q_prime = ops.transpose(q_prime, axes=(1, 2))
+        k_prime = ops.transpose(k_prime, axes=(1, 2))
+        v_prime = ops.transpose(v_prime, axes=(1, 2))
 
         attn_output, _ = self.attn(q_prime, k_prime, v_prime)
-        attn_output = ops.transpose(attn_output, axes=(0, 2, 1, 3))
+        attn_output = ops.transpose(attn_output, axes=(1, 2))
         attn_output = attn_output.reshape((batch_size, queries_len, self.num_head * self.dim_head))
 
         result = self.out_projection(attn_output)
