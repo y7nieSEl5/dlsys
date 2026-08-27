@@ -237,9 +237,11 @@ class AttentionLayer(Module):
 
         attn_output, _ = self.attn(q_prime, k_prime, v_prime)
         attn_output = ops.transpose(attn_output, axes=(1, 2))
-        attn_output = attn_output.reshape((batch_size, queries_len, self.num_head * self.dim_head))
+        attn_output = attn_output.reshape(
+            (batch_size * queries_len, self.num_head * self.dim_head))
 
         result = self.out_projection(attn_output)
+        result = result.reshape((batch_size, queries_len, self.out_features))
         ### END YOUR SOLUTION
 
         return result
