@@ -108,7 +108,13 @@ class MultiHeadAttention(Module):
         probs = None
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        result = self.matmul(q, k) / np.sqrt(q_dim)
+        if self.causal:
+            mask = self.create_causal_mask(queries_len, keys_values_len, self.device)
+            result = result + mask
+        probs = self.softmax(result)
+        probs = self.dropout(probs)
+        result = self.matmul(probs, v)
         ### END YOUR SOLUTION
 
         return result, probs
