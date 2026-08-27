@@ -114,7 +114,7 @@ class MultiHeadAttention(Module):
             result = result + mask
         probs = self.softmax(result)
         probs = self.dropout(probs)
-        result = self.matmul(probs, v)
+        result = self.matmul(probs, ops.transpose(v, axes=(2, 3)))
         ### END YOUR SOLUTION
 
         return result, probs
