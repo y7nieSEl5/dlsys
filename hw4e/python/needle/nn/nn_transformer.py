@@ -215,7 +215,23 @@ class AttentionLayer(Module):
         result = None
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        q_prime = self.q_projection(self.prenorm_q(q))
+        k_prime = self.k_projection(self.prenorm_k(k))
+        v_prime = self.v_projection(self.prenorm_v(v))
+
+        q_prime = q_prime.reshape((batch_size, queries_len, self.num_head, self.dim_head))
+        k_prime = k_prime.reshape((batch_size, keys_values_len, self.num_head, self.dim_head))
+        v_prime = v_prime.reshape((batch_size, keys_values_len, self.num_head, self.dim_head))
+
+        q_prime = ops.transpose(q_prime, axes=(0, 2, 1, 3))
+        k_prime = ops.transpose(k_prime, axes=(0, 2, 1, 3))
+        v_prime = ops.transpose(v_prime, axes=(0, 2, 1, 3))
+
+        attn_output, _ = self.attn(q_prime, k_prime, v_prime)
+        attn_output = ops.transpose(attn_output, axes=(0, 2, 1, 3))
+        attn_output = attn_output.reshape((batch_size, queries_len, self.num_head * self.dim_head))
+
+        result = self.out_projection(attn_output)
         ### END YOUR SOLUTION
 
         return result
