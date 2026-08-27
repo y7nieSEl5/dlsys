@@ -111,6 +111,13 @@ class MultiHeadAttention(Module):
         result = self.matmul(q, k) / np.sqrt(q_dim)
         if self.causal:
             mask = self.create_causal_mask(queries_len, keys_values_len, self.device)
+            mask = Tensor(
+                mask,
+                device=result.device,
+                dtype=result.dtype,
+                requires_grad=False,
+            )
+            mask = ops.broadcast_to(mask, result.shape)
             result = result + mask
         probs = self.softmax(result)
         probs = self.dropout(probs)
