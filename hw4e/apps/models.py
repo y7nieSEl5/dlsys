@@ -78,7 +78,18 @@ class LanguageModel(nn.Module):
             self.seq_model = nn.RNN(embedding_size, hidden_size, num_layers=num_layers, device=device, dtype=dtype)
         elif seq_model == 'lstm':
             self.seq_model = nn.LSTM(embedding_size, hidden_size, num_layers=num_layers, device=device, dtype=dtype)
-        self.linear = nn.Linear(hidden_size, output_size, device=device, dtype=dtype)
+        elif seq_model == 'transformer':
+            self.seq_model = nn.Transformer(
+                embedding_size,
+                hidden_size,
+                num_layers,
+                sequence_len=seq_len,
+                batch_first=False,
+                device=device,
+                dtype=dtype,
+            )
+        linear_input_size = embedding_size if seq_model == 'transformer' else hidden_size
+        self.linear = nn.Linear(linear_input_size, output_size, device=device, dtype=dtype)
         self.seq_model_type = seq_model
         ### END YOUR SOLUTION
 
