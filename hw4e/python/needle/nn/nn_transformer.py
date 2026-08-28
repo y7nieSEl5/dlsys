@@ -278,7 +278,6 @@ class TransformerLayer(Module):
             dtype=dtype
         )
         self.dropout1 = Dropout(dropout)
-        self.layer_norm1 = LayerNorm1d(q_features, device=device, dtype=dtype)
         self.linear1 = Linear(q_features, hidden_size, device=device, dtype=dtype)
         self.relu = ReLU()
         self.dropout2 = Dropout(dropout)
@@ -300,17 +299,18 @@ class TransformerLayer(Module):
         batch_size, seq_len, x_dim = x.shape
 
         ### BEGIN YOUR SOLUTION
-        x_norm1 = self.layer_norm1(x.reshape((batch_size * seq_len, x_dim)))
-        x_norm1 = x_norm1.reshape((batch_size, seq_len, x_dim))
-        attn_output = self.attention_layer(x_norm1)
+        attn_output = self.attention_layer(x)
         x = x + self.dropout1(attn_output)
-        x_norm2 = self.layer_norm2(x.reshape((batch_size * seq_len, x_dim)))
-        x_norm2 = x_norm2.reshape((batch_size, seq_len, x_dim))
-        x = self.linear1(x_norm2)
+
+        residual = x
+        x = self.layer_norm2(x.reshape((batch_size * seq_len, x_dim)))
+        x = self.linear1(x)
         x = self.relu(x)
         x = self.dropout2(x)
         x = self.linear2(x)
         x = self.dropout3(x)
+        x = x.reshape((batch_size, seq_len, x_dim))
+        x = residual + x
         ### END YOUR SOLUTION
 
         return x
