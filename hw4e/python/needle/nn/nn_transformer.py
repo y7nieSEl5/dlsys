@@ -268,7 +268,23 @@ class TransformerLayer(Module):
         self.dtype = dtype
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        self.attention_layer = AttentionLayer(
+            q_features=q_features,
+            num_head=num_head,
+            dim_head=dim_head,
+            dropout=dropout,
+            causal=causal,
+            device=device,
+            dtype=dtype
+        )
+        self.dropout1 = Dropout(dropout)
+        self.layer_norm1 = LayerNorm1d(q_features, device=device, dtype=dtype)
+        self.linear1 = Linear(q_features, hidden_size, device=device, dtype=dtype)
+        self.relu = ReLU()
+        self.dropout2 = Dropout(dropout)
+        self.linear2 = Linear(hidden_size, q_features, device=device, dtype=dtype)
+        self.dropout3 = Dropout(dropout)
+        self.layer_norm2 = LayerNorm1d(q_features, device=device, dtype=dtype)
         ### END YOUR SOLUTION
 
     def forward(
@@ -284,7 +300,17 @@ class TransformerLayer(Module):
         batch_size, seq_len, x_dim = x.shape
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        x_norm1 = self.layer_norm1(x.reshape((batch_size * seq_len, x_dim)))
+        x_norm1 = x_norm1.reshape((batch_size, seq_len, x_dim))
+        attn_output = self.attention_layer(x_norm1)
+        x = x + self.dropout1(attn_output)
+        x_norm2 = self.layer_norm2(x.reshape((batch_size * seq_len, x_dim)))
+        x_norm2 = x_norm2.reshape((batch_size, seq_len, x_dim))
+        x = self.linear1(x_norm2)
+        x = self.relu(x)
+        x = self.dropout2(x)
+        x = self.linear2(x)
+        x = self.dropout3(x)
         ### END YOUR SOLUTION
 
         return x
@@ -315,7 +341,24 @@ class Transformer(Module):
         self.batch_first = batch_first
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        self.positional_embedding = Embedding(
+            num_embeddings=sequence_len,
+            embedding_dim=embedding_size,
+            device=device,
+            dtype=dtype,
+        )
+        self.layers = Sequential(*[
+            TransformerLayer(
+                q_features=embedding_size,
+                num_head=num_head,
+                dim_head=dim_head,
+                hidden_size=hidden_size,
+                dropout=dropout,
+                causal=causal,
+                device=device,
+                dtype=dtype
+            ) for _ in range(num_layers)
+        ])
         ### END YOUR SOLUTION
 
     def forward(
@@ -327,7 +370,19 @@ class Transformer(Module):
             x = ops.transpose(x, axes=(0, 1))
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        batch_size, seq_len, embedding_size = x.shape
+        position_ids = Tensor(
+            np.arange(seq_len, dtype=np.float32).reshape((seq_len, 1)),
+            device=x.device,
+            dtype=x.dtype,
+            requires_grad=False,
+        )
+        position = self.positional_embedding(position_ids)
+        position = ops.broadcast_to(
+            position, (seq_len, batch_size, embedding_size))
+        position = ops.transpose(position, axes=(0, 1))
+        x = x + position
+        x = self.layers(x)
         ### END YOUR SOLUTION
 
         if not self.batch_first:
